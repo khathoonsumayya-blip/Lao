@@ -1,0 +1,24 @@
+- [External delivery providers](external-delivery-providers.md) — payment charging and live GPS remain explicit provider-credential gates, while core delivery persistence works without them.
+- [Shared package rebuilds](shared-package-rebuilds.md) — regenerate API contracts and declaration artifacts before typechecking dependent services after shared-schema work.
+- [Stripe Sync migration assets](stripe-sync-migration-assets.md) — keep stripe-replit-sync external from the API bundle so its runtime SQL migrations remain discoverable.
+- [Driver private storage](driver-private-storage.md) — custom signed sessions own private driver-document access; never expose identity objects through public storage paths.
+- [Development schema readiness](development-schema-readiness.md) — use the automatic post-merge schema setup before validation; a stale dev database can block auth and checkout flows.
+- [Staff operations integrity](staff-operations-integrity.md) — keep admin mutations atomic with audits and scope operational records by staff role.
+- [Delivery notification outbox](delivery-notification-outbox.md) — notification delivery claims use leases, tokens, and provider idempotency so workers never replay delivery transitions.
+- [RLS release gate](rls-release-gate.md) — prepare a dedicated Supabase test database with ordered schema and policy migrations before direct-client assertions.
+- [Checkout provider initialization](checkout-provider-initialization.md) — retain the checkout-key lock until the provider payment ID is durable, not merely until the delivery row exists.
+- [API generator constraints](api-generator-constraints.md) — use regex patterns rather than OpenAPI email format for this Zod generator, and normalize its trailing generated whitespace.
+- [Google Maps routing](google-maps-routing.md) — use server-side Directions for booking previews; browser keys only load map tiles and markers.
+- [Mobile booking layout](mobile-booking-layout.md) — use shrinkable grid tracks around scrollable steppers so intrinsic label width cannot widen the page.
+- [Safari runtime overlay events](safari-runtime-overlay-events.md) — the installed Vite overlay plugin can turn Safari non-Error events into synthetic unknown runtime crashes.
+- [Admin session separation](admin-session-separation.md) — Customer and legacy shared sessions must never prove entry through the Admin login surface.
+- [Driver auth and onboarding guards](driver-auth-onboarding-guards.md) — wrong-role Driver access must not revoke shared sessions; nested profile observers must not trigger mount-refetch loops.
+- [Recipient verification codes](recipient-verification-codes.md) — derive short-lived codes server-side, store only hashes, and expose plaintext solely through the owning Customer surface.
+- [Stable mobile auth forms](stable-mobile-auth-forms.md) — public sign-in forms must not render beneath reactive session gates that can remount focused iOS inputs.
+- [Preview outage diagnosis](preview-outage-diagnosis.md) — distinguish app crashes from workspace-wide workflow restarts before changing auth or adding reload workarounds.
+- [Driver compliance replacements](driver-compliance-replacements.md) — keep approved data active during review and enforce current documents at every new-work boundary.
+- [Requester support continuity](requester-support-continuity.md) — requester-visible replies require durable owned history and safe notification deep links, not component-local IDs.
+- [Admin fee policy snapshots](admin-fee-policy-snapshots.md) — fee-setting changes apply only to new quotes; checkout must honor the immutable policy captured by its stored quote.
+- [Offer response metrics](offer-response-metrics.md) — acceptance uses persisted accepted/declined responses only; direct assignments and expired offers never enter the denominator.
+- [Driver dispatch eligibility](driver-dispatch-eligibility.md) — staged pickup search requires fresh online location and current eligibility; one atomic acceptance ends every competing offer.
+- [Scheduled pickup windows](scheduled-pickup-windows.md) — scheduled timing is an immutable quoted window; Driver matching begins only within its dispatch lead time.

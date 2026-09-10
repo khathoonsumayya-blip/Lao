@@ -1,0 +1,13 @@
+{
+  "name": "Lao — Local Delivery",
+  "short_name": "Lao",
+  "description": "Book and track local deliveries with Lao.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

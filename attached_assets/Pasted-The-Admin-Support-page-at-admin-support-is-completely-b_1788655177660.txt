@@ -1,0 +1,58 @@
+The Admin Support page at:
+
+/admin/support
+
+is completely blank. Do NOT redesign the page yet and do NOT make unrelated changes.
+
+I want you to diagnose the exact root cause first.
+
+Please investigate the entire Support Ticket flow end-to-end:
+
+1. Find the /admin/support frontend page/component.
+2. Identify the API endpoint(s) it calls to load support tickets.
+3. Inspect the browser/network/API response for those requests.
+4. Inspect the server-side Admin support-ticket route/handler.
+5. Inspect the database schema and query used to retrieve support tickets.
+6. Verify whether support tickets actually exist in the database.
+7. Verify the Admin authentication/authorization check.
+8. Check whether tickets are incorrectly filtered by user/customer/driver/role/status.
+9. Check the browser console and server logs for runtime errors.
+10. Check whether the page is crashing because of an unexpected/null/undefined ticket field.
+11. Check whether React Query or another data-fetching layer is returning an error, empty result, or never resolving.
+
+IMPORTANT:
+
+* Do not guess.
+* Do not create fake tickets just to make the page appear populated.
+* Do not change the database schema unless absolutely necessary.
+* Do not modify Customer or Driver authentication.
+* Do not modify the already-fixed login/session architecture.
+* Do not modify unrelated pages.
+* Do not replace working APIs with mock data.
+
+I need you to report:
+
+A. Exact root cause
+B. Exact file(s) responsible
+C. Exact API endpoint being called
+D. Actual API response
+E. Whether tickets exist in the database
+F. Why the Admin UI is blank
+G. Smallest safe fix
+
+After identifying the root cause, implement only the smallest safe fix.
+
+Then verify:
+
+* Admin can open /admin/support
+* Existing support tickets appear
+* Ticket list is not blank when tickets exist
+* Empty state appears correctly when there are genuinely zero tickets
+* Admin can open a ticket
+* Customer/Driver support-ticket creation still works
+* No authentication or routing regressions
+* Typecheck passes
+* Production build passes
+* Relevant regression tests pass
+
+Do not tell me “fixed” until you have actually verified the API response and database data.

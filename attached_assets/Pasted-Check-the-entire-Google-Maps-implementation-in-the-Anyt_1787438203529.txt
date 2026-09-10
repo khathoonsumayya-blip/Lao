@@ -1,0 +1,36 @@
+Check the entire Google Maps implementation in the Anything Anywhere Customer App and fix anything that is not working.
+
+Do not redesign unrelated pages and do not remove existing working functionality.
+
+Verify and fix the following:
+
+1. Pickup address autocomplete must show real Google Maps/Places address suggestions while the customer types.
+2. Drop-off address autocomplete must work the same way.
+3. After an address is selected, use the real latitude and longitude returned by Google Maps. Never invent, approximate, or hard-code delivery locations.
+4. Show the pickup and drop-off markers at their correct real-world positions.
+5. Display the actual driving route between pickup and drop-off using Google Maps routing/directions rather than a straight line.
+6. Automatically fit the map so both pickup and drop-off markers and the route are clearly visible.
+7. On the delivery Tracking page, show the driver’s real current GPS position and update the driver marker through the existing realtime system.
+8. Do not use fake coordinates as a fallback if live coordinates are unavailable. Show a clear loading/error state instead.
+9. Make sure Google Maps works on:
+
+* Customer web app
+* iPhone/mobile layout
+* Android/mobile layout
+
+10. Check the Google Maps API configuration and browser-safe API key configuration. Do not expose server-only secrets to the client.
+11. Test the complete flow:
+    Customer enters pickup → selects address → enters drop-off → selects address → map displays both markers → route displays → booking is created → Tracking page displays the correct delivery route and live driver position.
+
+Run the relevant tests and verify the feature manually in the live preview.
+
+Do not stop after analysing the code. Implement any required fixes and complete the verification.
+
+When finished, tell me specifically:
+
+* whether address autocomplete works
+* whether pickup/drop-off coordinates are genuine
+* whether routing works
+* whether live driver tracking works
+* what files you changed
+* any Google Maps or Replit secret/configuration still required from me

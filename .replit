@@ -1,0 +1,70 @@
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "delivery-rls"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "generated-api"
+
+[[workflows.workflow]]
+name = "delivery-rls"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:rls"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "generated-api"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm run check:generated"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.development]
+CUSTOMER_APP_URL = "https://98003e0a-5b5f-4eab-a93b-da51a054e5db-00-8h9noluamrze.picard.replit.dev"
+VITE_CUSTOMER_APP_URL = "https://98003e0a-5b5f-4eab-a93b-da51a054e5db-00-8h9noluamrze.picard.replit.dev"
+
+[userenv.shared]
+PASSWORD_RESET_FROM_EMAIL = "Anything Anywhere <no-reply@trylao.com>"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-17d4fbde-0feb-4afd-90f1-66b35cac0fcd"

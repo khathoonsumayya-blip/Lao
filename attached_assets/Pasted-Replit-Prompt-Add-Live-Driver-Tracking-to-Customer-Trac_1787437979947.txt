@@ -1,0 +1,168 @@
+Replit Prompt — Add Live Driver Tracking to Customer Tracking Page
+
+Add real-time live map tracking to the existing Anything Anywhere delivery app.
+
+Main requirement
+
+On the Customer App → Tracking page, display a live map after a driver has accepted a delivery.
+
+The customer should be able to see:
+
+* Driver’s current location as a moving vehicle/driver marker
+* Pickup location marker
+* Drop-off/delivery location marker
+* Route from the driver’s current location → pickup → destination
+* Estimated arrival time (ETA)
+* Remaining distance
+* Current delivery status
+
+Use the map provider/configuration already connected to this project. Do not expose any private API keys in browser/client code.
+
+Real-time driver location
+
+In the Driver App, when the driver has an active delivery:
+
+1. Request location permission.
+2. Read the driver’s GPS location.
+3. Send latitude, longitude, heading, speed, accuracy, and timestamp to the existing backend/realtime system.
+4. Update the location while the delivery is active.
+5. Stop location sharing when the delivery is completed, cancelled, or the driver goes offline.
+
+Do not create unnecessary database writes every second. Use a sensible real-time update interval and movement threshold.
+
+Customer live tracking
+
+Subscribe the customer’s Tracking page to location updates for only that customer’s active delivery.
+
+When a new driver location is received:
+
+* Move the driver marker smoothly rather than refreshing the whole page.
+* Update the route when appropriate.
+* Recalculate/display ETA and remaining distance.
+* Keep the map centered intelligently so the driver, pickup, and destination are easy to understand.
+
+Do not continuously reset the customer’s map zoom if they manually zoom or move the map.
+
+Delivery states
+
+Support these stages:
+
+Searching for driver
+Show:
+“Finding your driver…”
+
+Driver assigned
+Show driver’s first name, vehicle information where available, ETA to pickup, and live driver position.
+
+Driver arriving
+Show:
+“Driver arriving”
+
+Picked up
+Show:
+“Package picked up”
+Then track the driver toward the delivery destination.
+
+Near destination
+Show:
+“Driver arriving soon”
+
+Delivered
+Show:
+“Delivered”
+Stop live GPS tracking and retain the completed delivery summary.
+
+Tracking page UI
+
+Keep this page very clean and mobile-friendly.
+
+The map should be the main element on the screen.
+
+Below or over the bottom section of the map, show a compact card containing:
+
+Driver name
+Current delivery status
+
+ETA
+Example: 8 min
+
+Distance
+Example: 3.2 mi
+
+Pickup → Delivery
+
+Add only essential actions such as:
+
+* Contact Driver
+* Delivery Details
+* Help
+
+Do NOT add large paragraphs of explanatory text.
+
+Security
+
+This is important.
+
+A customer must NEVER be able to subscribe to or retrieve another customer’s driver’s location.
+
+Verify delivery/customer authorization on the backend.
+
+Drivers must only be able to publish location for deliveries currently assigned to them.
+
+Do not expose unrestricted realtime location channels.
+
+Stop public access to old location records after the delivery ends according to the application’s existing retention/security model.
+
+Existing functionality
+
+Preserve all existing:
+
+* Customer App
+* Driver App
+* Admin App
+* authentication
+* delivery creation
+* address autocomplete
+* maps
+* pricing/quotes
+* payment flow
+* realtime delivery status
+* notifications
+* database/RLS policies
+* APIs
+
+Do not rebuild unrelated parts of the app.
+
+Reuse the project’s existing architecture and realtime infrastructure rather than introducing a second independent tracking system.
+
+Testing
+
+Test the complete flow:
+
+Customer creates delivery
+→ driver accepts
+→ Driver App starts location sharing
+→ Customer Tracking page opens map
+→ driver’s marker moves as location changes
+→ ETA/distance update
+→ pickup status changes
+→ customer continues tracking to destination
+→ delivery completed
+→ live tracking stops.
+
+Also test:
+
+* location permission denied
+* GPS temporarily unavailable
+* driver temporarily loses internet
+* customer refreshes Tracking page
+* customer closes and reopens Tracking page
+* driver app goes to background
+* delivery cancelled
+* unauthorized user attempts to access another delivery’s tracking data
+* mobile screen sizes
+* iPhone/Safari
+* Android/Chrome
+* desktop web
+
+Do not mark this task complete until the full live tracking flow has been verified end-to-end.

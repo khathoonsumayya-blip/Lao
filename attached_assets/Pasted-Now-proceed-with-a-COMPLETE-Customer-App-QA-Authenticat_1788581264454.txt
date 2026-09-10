@@ -1,0 +1,189 @@
+Now proceed with a COMPLETE Customer App QA.
+
+Authentication has just been fixed and fully regression-tested. Do NOT modify the authentication architecture unless QA finds a genuine regression.
+
+Test the Customer App end-to-end in a fresh mobile browser context.
+
+Customer entry:
+/?nativeBrowserPresentationStyle=fullScreen
+
+1. Authentication
+
+Verify:
+
+* Sign-in page loads correctly.
+* Email field accepts real keyboard input.
+* Password field accepts real keyboard input.
+* Password remains masked.
+* Login button requires both credentials.
+* Valid Customer login succeeds.
+* Invalid credentials show the correct error.
+* Refreshing after login keeps the Customer authenticated.
+* Logging out actually ends the Customer session.
+* After logout, protected Customer pages cannot be accessed.
+* Logging in again works normally.
+* Full-screen query parameter is preserved.
+
+2. Customer Home / Map
+
+Verify:
+
+* Home page loads without errors.
+* Map renders correctly.
+* Current location behavior works.
+* Pickup and drop-off controls are usable.
+* No loading loop or repeated API requests.
+* No React/Vite/runtime errors.
+* Mobile scrolling and touch interaction work correctly.
+
+3. Saved Addresses
+
+This is especially important.
+
+I previously reported that saved addresses could not be used when entering pickup/drop-off addresses.
+
+Verify:
+
+* Saved addresses can be created.
+* Saved addresses persist after navigation/refresh.
+* Saved addresses appear when selecting pickup.
+* Saved addresses appear when selecting drop-off.
+* Selecting a saved address actually populates the correct field.
+* Pickup and drop-off cannot accidentally overwrite each other.
+* Editing/deleting saved addresses works if supported.
+* Empty saved-address state is handled correctly.
+
+Do NOT consider this section passed merely because addresses can be saved. Verify that an existing saved address can actually be selected and used in the order flow.
+
+4. Pickup → Drop-off Flow
+
+Verify:
+
+* Pickup address can be entered manually.
+* Pickup can be selected from saved addresses.
+* Drop-off address can be entered manually.
+* Drop-off can be selected from saved addresses.
+* Both addresses remain correct after selection.
+* Address validation behaves correctly.
+* Continue/Next buttons enable only when appropriate.
+* No field resets unexpectedly.
+* Keyboard does not cause layout/input problems on mobile.
+
+5. Order / Delivery Request
+
+Follow the complete Customer order flow as far as the current application supports.
+
+Verify:
+
+* Delivery/order details can be entered.
+* Available options load correctly.
+* Price/estimate information is consistent.
+* Required fields are enforced.
+* Submission works.
+* Loading states work.
+* Success state is displayed correctly.
+* Errors are handled without losing entered data.
+* Duplicate submissions are prevented.
+
+6. Customer Orders
+
+Verify:
+
+* Current/active order is displayed correctly.
+* Order status updates correctly.
+* Previous/completed orders are accessible if implemented.
+* Order details are correct.
+* Navigation back to the Customer home works.
+* Refreshing does not unexpectedly lose the order/session state.
+
+7. Profile / Account
+
+Verify:
+
+* Customer profile loads.
+* Profile information can be viewed/edited where supported.
+* Changes persist after refresh.
+* Saved addresses remain available.
+* Logout works from the expected location.
+
+8. Mobile UX
+
+Use a realistic mobile viewport, approximately 390×844.
+
+Check:
+
+* No horizontal overflow.
+* Buttons are tappable.
+* Inputs are tappable.
+* No invisible overlays intercept touches.
+* Modals/sheets open and close correctly.
+* Back navigation works.
+* Keyboard does not permanently obscure important controls.
+* No accidental page remounts while typing.
+
+9. Network / Runtime Stability
+
+Monitor for:
+
+* Repeated API requests.
+* Request storms.
+* Infinite React Query retries.
+* Loading loops.
+* 401/403 loops.
+* Unhandled exceptions.
+* React warnings that indicate a real functional problem.
+* Failed API calls that prevent normal Customer operation.
+
+10. Regression checks
+
+Run:
+
+* Customer typecheck
+* Customer production build
+* Customer regression tests
+* Existing API tests
+* git diff --check
+
+Important QA rule
+
+Do NOT simply report that a page “loads.”
+
+For every important interaction, actually perform the action using mobile-style coordinate taps and real keyboard input where applicable.
+
+If something fails:
+
+1. Identify the exact root cause.
+2. Fix the root cause rather than adding a workaround.
+3. Add a focused regression test.
+4. Re-run the affected flow.
+5. Re-run the complete Customer regression suite.
+6. Re-run typecheck/build/diff checks.
+
+Do not change Driver or Admin functionality during this Customer QA unless a shared component change is absolutely necessary.
+
+At the end provide:
+
+Customer QA Result
+
+* Authentication: PASS/FAIL
+* Home/Map: PASS/FAIL
+* Saved Addresses: PASS/FAIL
+* Pickup: PASS/FAIL
+* Drop-off: PASS/FAIL
+* Order flow: PASS/FAIL
+* Orders: PASS/FAIL
+* Profile: PASS/FAIL
+* Logout/session persistence: PASS/FAIL
+* Mobile UX: PASS/FAIL
+* Runtime/network stability: PASS/FAIL
+
+Also provide:
+
+* Exact defects found
+* Exact fixes made
+* Files changed
+* Regression tests added
+* Final test counts
+* Any remaining blockers
+
+Do not declare the Customer App complete until the saved-address → pickup/drop-off workflow has been specifically verified end-to-end.

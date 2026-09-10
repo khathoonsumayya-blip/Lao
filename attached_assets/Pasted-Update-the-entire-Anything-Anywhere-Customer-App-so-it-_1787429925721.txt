@@ -1,0 +1,111 @@
+Update the entire Anything Anywhere Customer App so it is NOT presented as a Raleigh-only delivery service.
+
+Make this change consistently across every customer-facing page and component, including:
+
+* Home page
+* Sign-up page
+* Login page
+* Address entry screens
+* Delivery booking flow
+* Pickup and drop-off forms
+* Pricing/estimate screens
+* Order confirmation
+* Tracking screens
+* Profile/account pages
+* Empty states
+* Error messages
+* Headers, footers and navigation
+* Tooltips, placeholders and helper text
+
+Remove Raleigh-specific wording
+
+Remove or replace wording such as:
+
+* “Serving Raleigh”
+* “Available in Raleigh”
+* “Raleigh delivery”
+* “Raleigh area”
+* “Deliver anywhere in Raleigh”
+* “Raleigh, NC”
+* Any message suggesting users must be located in Raleigh
+
+Replace it with neutral wording such as:
+
+* “Enter your pickup address”
+* “Enter your delivery address”
+* “Where should we pick it up?”
+* “Where should we deliver it?”
+* “Fast, simple delivery”
+* “Anything. Anywhere.”
+
+Do NOT automatically insert Raleigh into address fields.
+
+Address handling
+
+Customers should be able to enter valid addresses from different cities and states.
+
+Do not hard-code:
+
+* Raleigh
+* North Carolina
+* Raleigh ZIP codes
+* Raleigh coordinates
+* Raleigh delivery boundaries
+
+Use the address/map provider to determine the actual city, state, ZIP code, latitude and longitude from the address selected by the customer.
+
+If delivery availability is limited in certain areas, handle that through backend service-area configuration instead of displaying the whole app as Raleigh-only.
+
+Simplify the Sign-Up page
+
+The sign-up screen currently contains too much explanatory content.
+
+Keep it clean and mobile-friendly.
+
+Show mainly:
+
+Create your account
+
+Full Name
+Email
+Phone Number
+Password
+Confirm Password
+
+Create Account
+
+“Already have an account? Log in”
+
+Only show address information during sign-up if it is genuinely required.
+
+Do not show long paragraphs explaining how the delivery service works.
+
+Brand positioning
+
+Anything Anywhere should look like a scalable delivery platform rather than a local Raleigh application.
+
+Use the brand message:
+
+Anything. Anywhere.
+
+Keep the design clean, modern, spacious and easy to understand.
+
+Important
+
+Search the COMPLETE customer application codebase for:
+
+Raleigh
+
+Raleigh, NC
+
+North Carolina
+
+NC
+
+and inspect every occurrence.
+
+Remove location-specific wording where it affects customers.
+
+Do not remove Raleigh from internal test data, developer documentation or backend configuration if it is still needed for the initial pilot.
+
+Do not break the Driver App, Admin App, authentication, maps, realtime tracking, delivery creation or existing APIs while making these changes.

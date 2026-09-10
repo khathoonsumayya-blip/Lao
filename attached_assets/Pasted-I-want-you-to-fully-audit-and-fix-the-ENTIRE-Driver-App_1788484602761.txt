@@ -1,0 +1,209 @@
+I want you to fully audit and fix the ENTIRE Driver App flow, not just the current onboarding screen.
+
+The Driver App is repeatedly stopping at:
+
+/driver/onboarding
+
+Public URL:
+https://98003e0a-5b5f-4eab-a93b-da51a054e5db-00-8h9noluamrze.picard.replit.dev/driver/onboarding
+
+IMPORTANT:
+Do not assume the problem is only UI. Trace the complete Driver authentication, routing, onboarding state, API calls, database queries, session handling, and navigation flow.
+
+1. Reproduce the problem
+
+Open the Driver App and reproduce the exact point where it stops at /driver/onboarding.
+
+Check:
+
+* Browser console errors
+* Network/API failures
+* HTTP status codes
+* React rendering errors
+* authentication/session state
+* onboarding API responses
+* database errors
+* missing/undefined data
+* redirects or redirect loops
+* loading states that never resolve
+* buttons that do nothing
+* JavaScript exceptions
+
+2. Audit Driver authentication
+
+Verify:
+
+* Driver login works correctly.
+* Unauthenticated users cannot access Driver pages.
+* A logged-in Customer cannot access Driver pages.
+* A logged-in Admin cannot accidentally bypass Driver authentication.
+* Driver session persists after refresh.
+* Driver session is correctly restored.
+* Logout works.
+* Expired/invalid sessions redirect correctly.
+* Driver role/status is checked server-side, not only in the frontend.
+
+Do NOT weaken authentication to make the page load.
+
+3. Audit /driver/onboarding
+
+Inspect the complete onboarding implementation.
+
+Verify every step:
+
+* page loads
+* driver profile is loaded
+* existing onboarding progress is loaded
+* required fields render
+* fields accept input on iPhone/iPad
+* validation works
+* Save/Continue works
+* Back works
+* data is actually saved to the database
+* refresh does not lose saved progress
+* incomplete onboarding resumes correctly
+* completed onboarding does not unnecessarily return to onboarding
+* final submission works
+* navigation to the Driver dashboard works
+
+If the page is waiting indefinitely for an API request, identify the exact request and fix the root cause.
+
+4. Audit all Driver routes
+
+Starting from Driver login, test the COMPLETE Driver journey:
+
+Login
+→ Driver onboarding
+→ Profile
+→ Vehicle information
+→ Documents
+→ Availability
+→ Driver dashboard
+→ Available jobs/orders
+→ Job/order details
+→ Accept job
+→ Pickup
+→ In transit
+→ Delivery/drop-off
+→ Complete delivery
+→ Earnings
+→ History
+→ Notifications
+→ Driver settings
+→ Logout
+
+Use the actual routes and components already present in the project. Do not invent duplicate pages if existing implementations already exist.
+
+5. Audit Driver APIs
+
+Find every API endpoint used by the Driver App.
+
+For each endpoint verify:
+
+* correct route
+* correct HTTP method
+* authentication
+* authorization
+* request body
+* response format
+* error handling
+* database query
+* null/empty-state handling
+
+Pay special attention to APIs called by /driver/onboarding.
+
+6. Audit database dependencies
+
+Check whether Driver onboarding expects records that do not exist.
+
+Look for:
+
+* missing driver profile
+* incorrect user/profile ID mapping
+* incorrect role
+* missing onboarding status
+* missing vehicle record
+* missing document record
+* null values causing frontend crashes
+* database schema mismatch
+* queries returning undefined instead of safe empty data
+
+Fix the smallest root cause rather than adding fake/default data.
+
+7. Check routing
+
+Inspect the Driver route guards and navigation logic.
+
+Make sure there is no loop such as:
+
+/driver
+→ /driver/onboarding
+→ authentication check
+→ /driver
+→ /driver/onboarding
+
+Also verify that onboarding completion status is calculated consistently on the server and frontend.
+
+8. iPhone/iPad testing
+
+The Driver App must work properly on iPhone and iPad.
+
+Check:
+
+* touch targets
+* text inputs
+* select controls
+* date/file inputs
+* scrolling
+* keyboard behavior
+* modal/drawer behavior
+* buttons near the bottom of the screen
+* Safari/WebKit behavior
+* responsive layout
+
+Do not add unnecessary special input handlers that could break native iOS input.
+
+9. Do not hide errors
+
+Do NOT solve the issue by:
+
+* removing authentication
+* bypassing onboarding
+* automatically marking onboarding complete
+* hiding API errors
+* returning fake successful API responses
+* adding demo driver data
+* suppressing exceptions
+* redirecting blindly to the dashboard
+
+The Driver flow must actually work with the real database and real authentication.
+
+10. Fix the root cause
+
+After identifying the failure:
+
+1. Explain the exact root cause.
+2. Fix it.
+3. Restart the application if necessary.
+4. Test the complete Driver flow again.
+5. Verify /driver/onboarding specifically.
+6. Verify refresh persistence.
+7. Verify logout/login.
+8. Verify that Customer and Admin authentication remain unaffected.
+
+Keep existing Customer and Admin functionality intact.
+
+11. Final verification report
+
+At the end, report:
+
+* Exact root cause
+* Files changed
+* APIs changed
+* Database/schema changes, if any
+* Authentication changes, if any
+* Driver routes tested
+* Which steps passed
+* Any remaining issue
+
+Do not stop after fixing /driver/onboarding. I want the COMPLETE Driver App audited and working end-to-end.

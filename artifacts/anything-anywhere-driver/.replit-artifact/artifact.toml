@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/driver/"
+title = "Anything Anywhere Driver"
+description = "A driver-focused delivery operations app for approved Anything Anywhere couriers to manage availability, accept protected delivery offers, complete verified handoffs, track earnings, and access safety support using the shared Raleigh delivery backend."
+version = "1.0.0"
+id = "artifacts/anything-anywhere-driver"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/driver/" ]
+localPort = 25427
+
+[services.development]
+run = "pnpm --filter @workspace/anything-anywhere-driver run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/anything-anywhere-driver", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/anything-anywhere-driver/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25427"
+BASE_PATH = "/driver/"

@@ -1,0 +1,39 @@
+Do not redesign or add new features. Treat the current live driver tracking implementation as complete and perform a final production-readiness verification for Task #41.
+
+Verify the complete real-device tracking flow:
+
+1. Customer creates or opens an active delivery.
+2. Assigned driver opens the Driver app.
+3. Driver taps Enable live location.
+4. Confirm the browser/device asks for location permission only after that action.
+5. With permission granted, confirm real GPS coordinates are sent to the API and persisted correctly.
+6. Confirm the Customer tracking page receives the driver location through SSE without manual refresh.
+7. Confirm the driver marker moves smoothly as new GPS positions arrive.
+8. Confirm the customer can manually move/zoom the map without it constantly snapping back.
+9. Confirm Follow driver recenters the map correctly when selected.
+10. Confirm remaining route, distance, ETA, location age, and tracking status update correctly.
+11. Verify the route changes from:
+
+* driver → pickup before pickup
+* driver → destination after pickup
+
+12. Confirm repeated GPS updates are filtered/throttled and do not generate unnecessary Google Directions requests.
+13. Confirm temporary network loss recovers cleanly.
+14. Confirm location permission denied, disabled, unavailable, and retry states remain usable.
+15. Confirm turning off live location stops GPS publishing and cleans up the location watcher.
+16. Confirm completing, cancelling, or otherwise terminating a delivery immediately stops tracking.
+17. Confirm completed/terminal deliveries expose no driver coordinates through API responses, route responses, SSE events, or cached customer state.
+18. Test Customer and Driver apps at mobile widths, especially 390px, and confirm no horizontal overflow or map/control overlap.
+19. Run the full API integration tests, TypeScript checks, generated API contract check, and production builds again after verification.
+
+Do not introduce fake GPS coordinates or demo fallbacks.
+
+If real-device GPS cannot be exercised inside the Replit browser environment, do not modify working production code merely to satisfy the test environment. Clearly report the exact manual physical-device test steps required and leave Task #41 ready for that final device test.
+
+At the end, report only:
+
+* PASS/FAIL for each major tracking stage
+* any bugs found and fixed
+* automated test results
+* whether real physical-device GPS was verified
+* whether Task #41 is safe to mark complete

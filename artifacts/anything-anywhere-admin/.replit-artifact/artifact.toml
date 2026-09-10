@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/admin/"
+title = "Anything Anywhere Admin"
+description = "A protected operations desk for Anything Anywhere staff to manage deliveries, drivers, customers, payments, support, and settings."
+version = "1.0.0"
+id = "artifacts/anything-anywhere-admin"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/admin/" ]
+localPort = 20071
+
+[services.development]
+run = "pnpm --filter @workspace/anything-anywhere-admin run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/anything-anywhere-admin", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/anything-anywhere-admin/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20071"
+BASE_PATH = "/admin/"

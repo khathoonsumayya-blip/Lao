@@ -1,0 +1,358 @@
+Implement the Driver verification workflow described below.
+
+IMPORTANT:
+
+* Do NOT replace the existing Driver authentication, onboarding, document upload, private storage, or Admin authentication architecture.
+* Do NOT create duplicate Driver/application/document tables or duplicate approval APIs.
+* Extend and wire the existing implementation.
+* Make the smallest safe changes necessary.
+* Do not weaken any existing authorization or security controls.
+
+Phase 1 — Repair the Admin Driver review UI
+
+The existing Admin Drivers page incorrectly checks:
+
+row.status
+
+The API returns:
+
+row.approvalStatus
+
+Fix this mismatch everywhere in the Admin Driver review UI.
+
+The Admin Drivers page must correctly show:
+
+* Pending
+* Approved
+* Rejected
+* Suspended
+
+Add proper:
+
+* Loading state
+* Error state with Retry
+* Genuine empty state
+* API failure handling
+
+Pending Drivers must display a clear action to open their review.
+
+Phase 2 — Build the Admin Driver review surface
+
+Use the existing:
+
+GET /api/admin/drivers/:id/review
+
+Do not create a duplicate endpoint.
+
+Create a usable Admin Driver review/detail screen showing the information already returned by the endpoint:
+
+Application
+
+* Driver identity
+* Contact information
+* Onboarding/submission status
+* License state
+* License last four
+* Insurance provider
+* Insurance expiration
+* Vehicle information
+* Background-check status
+* MVR status, once implemented
+
+Documents
+
+Display every required document:
+
+* Driver license
+* Insurance
+* Vehicle registration
+
+For each document show:
+
+* Document type
+* Verification status
+* Expiration when available
+* Review action
+
+Use the existing:
+
+POST /api/admin/driver-documents/:id/review
+
+for document decisions.
+
+Do not create a second document-review API.
+
+Add an appropriate rejection-reason field when rejecting a document.
+
+Phase 3 — Secure Admin document viewing
+
+Add one narrowly scoped Admin-only endpoint:
+
+POST /api/admin/driver-documents/:id/download-url
+
+Requirements:
+
+* Admin role required.
+* Dispatcher must NOT be allowed.
+* Look up the document by ID.
+* Validate the document belongs to the referenced Driver.
+* Validate the storage path is a private Driver-document path.
+* Generate a short-lived signed GET URL using the existing private document storage implementation.
+* Never expose permanent/public storage paths.
+* Do not make Driver documents publicly accessible.
+* Handle missing documents safely.
+
+If appropriate for the existing audit architecture, record an Admin document-access audit event.
+
+The Admin UI should provide:
+
+* View
+* Open
+* Download
+
+using the short-lived signed URL.
+
+Do not expose storagePath to the browser as a permanent path.
+
+Phase 4 — Background-check adjudication
+
+Reuse:
+
+driver_applications.background_check_status
+
+Existing states:
+
+* not_started
+* pending
+* clear
+* review
+
+Add an Admin-only endpoint:
+
+POST /api/admin/drivers/:id/background-check
+
+Allow controlled transitions.
+
+At minimum persist:
+
+* Status
+* Adjudication/completion timestamp
+* Optional reason/reference
+
+Use the existing admin_audit_logs for the action history.
+
+Do not create a duplicate background-check system.
+
+The Admin review page must allow an Admin to record the background-check result.
+
+Phase 5 — Add MVR verification
+
+There is currently no MVR/driving-record model.
+
+Add the smallest necessary schema extension.
+
+Prefer extending driver_applications with fields such as:
+
+* mvr_check_status
+* mvr_checked_at
+* Optional provider/reference
+* Optional review reason
+
+Use the same status pattern needed by the workflow, for example:
+
+* not_started
+* pending
+* clear
+* review
+
+Only create a separate MVR table if the current architecture genuinely requires preserving multiple provider attempts/reports independently.
+
+Add an Admin-only endpoint:
+
+POST /api/admin/drivers/:id/mvr
+
+Persist the result and audit the action.
+
+Display MVR status in the Admin Driver review screen.
+
+Phase 6 — MOST IMPORTANT: Make approval authoritative server-side
+
+Do NOT create a new approval endpoint.
+
+Strengthen the existing:
+
+POST /api/admin/drivers/:id/decision
+
+Approval must happen only if ALL of the following are true.
+
+Application requirements
+
+1. Driver exists.
+2. Driver application exists.
+3. onboarding_status === submitted
+4. Required onboarding fields are complete.
+
+Required documents
+
+The latest/current document for each required type must exist and have:
+
+* verification_status === approved
+
+Required:
+
+* License
+* Insurance
+* Vehicle registration
+
+Also verify that required documents are not expired.
+
+Insurance
+
+Verify:
+
+* Insurance document is approved.
+* Insurance expiration is in the future.
+* Existing structured insurance expiration is valid.
+
+Background check
+
+Require:
+
+background_check_status === clear
+
+MVR
+
+Require:
+
+mvr_check_status === clear
+
+Account eligibility
+
+Verify the Driver/account is in an eligible state and is not suspended or otherwise blocked.
+
+If ANY requirement fails:
+
+* Do NOT approve.
+* Return HTTP 409 or 422.
+* Return a structured list of unmet requirements.
+
+Example response shape:
+
+{
+  "error": "Driver verification incomplete",
+  "requirements": [
+    {
+      "code": "BACKGROUND_CHECK_NOT_CLEAR",
+      "message": "Background check must be clear before approval."
+    },
+    {
+      "code": "INSURANCE_DOCUMENT_PENDING",
+      "message": "Insurance document must be approved."
+    }
+  ]
+}
+
+Do not leak unnecessary private document information.
+
+Approval transaction
+
+Inside the existing approval transaction, atomically update:
+
+* drivers.approval_status = approved
+* drivers.onboarding_status = approved
+* drivers.availability_status = offline
+* Appropriate profile status
+* Existing Admin audit log
+
+Make sure there is no state where approval is committed but the related lifecycle state is only partially updated.
+
+For rejection/suspension, make related lifecycle updates consistent with the existing product behavior.
+
+Important: document selection
+
+The database permits multiple document versions.
+
+When checking approval eligibility, select the latest/current document for each required document type according to the existing application logic.
+
+Do not accidentally approve a Driver because an older document is approved while a newer replacement is pending or rejected.
+
+Phase 7 — Prevent verification bypass
+
+Review all server-side Driver lifecycle paths.
+
+Going online must remain protected by approval.
+
+Offer listing must remain protected by approval.
+
+Offer acceptance must remain protected by approval.
+
+Do not rely on frontend hiding buttons.
+
+The server must remain authoritative.
+
+Phase 8 — Preserve authentication architecture
+
+Do NOT modify:
+
+* Customer authentication
+* Driver authentication
+* Admin authentication
+* Shared session architecture
+* Login behavior
+* Existing role authorization
+
+unless a test proves the Driver verification changes require it.
+
+Phase 9 — Tests
+
+Add/execute integration tests proving:
+
+1. Pending Driver cannot go online.
+2. Pending Driver cannot list offers.
+3. Pending Driver cannot accept an offer.
+4. Admin cannot approve before onboarding submission.
+5. Admin cannot approve with missing required documents.
+6. Admin cannot approve with pending documents.
+7. Admin cannot approve with rejected documents.
+8. Admin cannot approve with expired documents.
+9. Admin cannot approve without clear background check.
+10. Admin cannot approve without clear MVR.
+11. Dispatcher cannot approve a Driver.
+12. Dispatcher cannot access private document download URLs.
+13. Admin can securely obtain a short-lived document URL.
+14. Complete verification allows Admin approval.
+15. Approved Driver remains offline immediately after approval.
+16. Approved Driver can subsequently go online.
+17. Approved online Driver can list/accept an eligible offer.
+18. Existing Customer, Driver, and Admin authentication tests still pass.
+
+Also run:
+
+* Typecheck
+* Production build
+* Existing regression tests
+* git diff --check
+
+Important implementation discipline
+
+Before changing code:
+
+1. Inspect the existing schemas, routes, storage helpers, hooks, and Admin Driver components.
+2. Reuse existing types/functions whenever possible.
+3. Do not duplicate logic.
+4. Keep authorization server-side.
+5. Keep private documents private.
+6. Make database changes through proper migrations.
+7. Do not silently alter unrelated Driver or authentication behavior.
+
+After implementation, report:
+
+* Exact files changed
+* Database migration created
+* API endpoints added/modified
+* UI components changed
+* Approval prerequisites enforced
+* Tests executed and their results
+* Any remaining limitations
+
+Do not claim the workflow is complete unless the server-side approval prerequisite tests pass.

@@ -1,0 +1,3388 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: delivery
+    description: Customer delivery operations
+  - name: support
+    description: Customer support operations
+paths:
+  /auth/session:
+    get:
+      operationId: getAuthSession
+      tags: [auth]
+      summary: Get the signed-in profile and staff role
+      responses:
+        "200":
+          description: Active signed-in session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "401": { description: Authentication required }
+  /auth/register:
+    post:
+      operationId: registerAccount
+      tags: [auth]
+      summary: Create a customer or driver account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationInput"
+      responses:
+        "201":
+          description: New signed-in account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "400": { description: Invalid registration details }
+        "409": { description: An account already uses this email address }
+  /auth/password-reset:
+    post:
+      operationId: requestPasswordReset
+      tags: [auth]
+      summary: Request a password reset email
+      description: Always accepts a validly shaped request without revealing whether the email belongs to an active account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "202":
+          description: Reset request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordResetAccepted"
+  /auth/password-reset/confirm:
+    post:
+      operationId: confirmPasswordReset
+      tags: [auth]
+      summary: Consume a password reset link and set a new password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetConfirmation"
+      responses:
+        "200":
+          description: Password changed and a new session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "400": { description: Malformed reset link or invalid password }
+        "410": { description: Expired or already-used reset link }
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [support]
+      summary: List signed-in notifications with safe support deep-link context
+      responses:
+        "200":
+          description: Notifications owned by the signed-in requester
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Notification" }
+        "401": { description: Authentication required }
+  /deliveries/summary:
+    get:
+      operationId: getDeliverySummary
+      tags: [delivery]
+      summary: Get customer delivery summary
+      responses:
+        "200":
+          description: Customer summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliverySummary"
+  /addresses/suggestions:
+    get:
+      operationId: listAddressSuggestions
+      tags: [delivery]
+      summary: Search approved address suggestions for a delivery
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 160
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 8
+            default: 5
+      responses:
+        "200":
+          description: Address suggestions, or a safe provider-unavailable response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddressSuggestions"
+        "400": { description: Search text is too short or too long }
+  /addresses:
+    get:
+      operationId: listCustomerAddresses
+      tags: [delivery]
+      summary: List saved addresses for the signed-in customer
+      responses:
+        "200":
+          description: Customer-owned saved addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedAddress"
+        "401": { description: Authentication required }
+        "403": { description: Customer role required }
+    post:
+      operationId: createCustomerAddress
+      tags: [delivery]
+      summary: Save an address for the signed-in customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedAddressInput"
+      responses:
+        "201":
+          description: Saved customer address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedAddress"
+        "400": { description: Invalid saved address }
+        "403": { description: Customer role required }
+  /addresses/{id}:
+    patch:
+      operationId: updateCustomerAddress
+      tags: [delivery]
+      summary: Update a customer-owned saved address
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedAddressInput"
+      responses:
+        "200":
+          description: Updated customer address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedAddress"
+        "400": { description: Invalid saved address }
+        "403": { description: Customer role required }
+        "404": { description: Address not found }
+    delete:
+      operationId: deleteCustomerAddress
+      tags: [delivery]
+      summary: Delete a customer-owned saved address
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Address deleted }
+        "403": { description: Customer role required }
+        "404": { description: Address not found }
+  /deliveries/quote:
+    post:
+      operationId: createDeliveryQuote
+      tags: [delivery]
+      summary: Calculate a server-side delivery quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryQuoteInput"
+      responses:
+        "200":
+          description: Delivery quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryQuote"
+        "400":
+          description: Invalid delivery details
+  /deliveries:
+    get:
+      operationId: listDeliveries
+      tags: [delivery]
+      summary: List customer deliveries
+      responses:
+        "200":
+          description: Customer deliveries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Delivery"
+    post:
+      operationId: createDelivery
+      tags: [delivery]
+      summary: Create a delivery and Stripe payment intent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryInput"
+      responses:
+        "201":
+          description: Created delivery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutDelivery"
+  /payments/stripe-config:
+    get:
+      operationId: getStripePaymentConfig
+      tags: [payment]
+      summary: Get customer-safe Stripe checkout configuration
+      responses:
+        "200":
+          description: Stripe publishable configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripePaymentConfig"
+  /deliveries/{id}:
+    get:
+      operationId: getDelivery
+      tags: [delivery]
+      summary: Get a delivery detail
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      responses:
+        "200":
+          description: Delivery detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "404":
+          description: Delivery not found
+  /deliveries/{id}/route:
+    get:
+      operationId: getDeliveryRoute
+      tags: [delivery]
+      summary: Get a provider-backed route and authorized live driver location
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      responses:
+        "200":
+          description: Route information or an explicit unavailable fallback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRoute"
+        "403": { description: Delivery access required }
+        "404": { description: Delivery not found }
+  /deliveries/{id}/recipient-verification:
+    get:
+      operationId: getRecipientVerification
+      tags: [delivery]
+      summary: Get the signed-in customer's active recipient verification code
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      responses:
+        "200":
+          description: Active customer-owned recipient verification code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipientVerification"
+        "403": { description: Customer role required }
+        "404": { description: Active verification code not found }
+  /deliveries/{id}/photos/upload-url:
+    post:
+      operationId: createDeliveryPhotoUploadUrl
+      tags: [delivery]
+      summary: Prepare a private package photo upload
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryPhotoUploadInput"
+      responses:
+        "201":
+          description: Short-lived private upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryPhotoUpload"
+        "400": { description: Invalid photo metadata }
+        "403": { description: Delivery access required }
+        "404": { description: Delivery not found }
+        "503": { description: Private storage unavailable }
+  /deliveries/{id}/photos:
+    get:
+      operationId: listDeliveryPhotos
+      tags: [delivery]
+      summary: List private package photos for authorized delivery participants
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      responses:
+        "200":
+          description: Authorized package photos with short-lived download URLs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeliveryPhoto"
+        "403": { description: Delivery access required }
+        "404": { description: Delivery not found }
+    post:
+      operationId: attachDeliveryPhoto
+      tags: [delivery]
+      summary: Attach a verified private package photo to a delivery
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryPhotoAttachInput"
+      responses:
+        "201":
+          description: Attached private package photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryPhoto"
+        "400": { description: Invalid or unverified photo }
+        "403": { description: Delivery access required }
+        "404": { description: Delivery not found }
+  /support/tickets:
+    get:
+      operationId: listCustomerSupportTickets
+      tags: [support]
+      summary: List the signed-in customer's support tickets
+      responses:
+        "200":
+          description: Customer-owned tickets, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RequesterSupportSource" }
+        "401": { description: Authentication required }
+        "403": { description: Customer role required }
+    post:
+      operationId: createSupportTicket
+      tags: [support]
+      summary: Create a support ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportTicketInput"
+      responses:
+        "201":
+          description: Support ticket created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportTicket"
+  /support/tickets/{id}/conversation:
+    get:
+      operationId: listCustomerSupportTicketConversation
+      tags: [support]
+      summary: List the signed-in customer's support ticket conversation
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      responses:
+        "200":
+          description: Original ticket message followed by requester-visible replies
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RequesterSupportConversationEntry" }
+        "403": { description: Customer role required }
+        "404": { description: Support ticket not found }
+    post:
+      operationId: createCustomerSupportTicketConversationReply
+      tags: [support]
+      summary: Reply to the signed-in customer's support ticket
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RequesterSupportConversationReplyInput" }
+      responses:
+        "200":
+          description: Idempotently accepted existing reply
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequesterSupportConversationReply" }
+        "201":
+          description: Created requester reply
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequesterSupportConversationReply" }
+        "400": { description: Invalid reply }
+        "403": { description: Customer role required }
+        "404": { description: Support ticket not found }
+  /driver/deliveries:
+    get:
+      operationId: listDriverDeliveries
+      tags: [delivery]
+      summary: List deliveries assigned to the signed-in driver
+      responses:
+        "200":
+          description: Driver deliveries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Delivery"
+        "401": { description: Authentication required }
+        "403": { description: Driver role required }
+  /driver/profile:
+    get:
+      operationId: getDriverProfile
+      tags: [driver]
+      summary: Get the signed-in driver's operational profile
+      responses:
+        "200":
+          description: Driver profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfile"
+        "403": { description: Driver role required }
+    patch:
+      operationId: updateDriverProfile
+      tags: [driver]
+      summary: Update safe profile fields and submit compliance changes for review
+      description: The authenticated driver is derived only from the session. Vehicle, license, registration, and insurance changes remain pending until staff approval.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile and compliance review state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfileUpdateResult"
+        "400": { description: Invalid profile update }
+        "403": { description: Driver role required }
+  /driver/onboarding:
+    get:
+      operationId: getDriverOnboarding
+      tags: [driver]
+      summary: Get the signed-in driver's onboarding record
+      responses:
+        "200":
+          description: Driver onboarding record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverOnboarding"
+    patch:
+      operationId: updateDriverOnboarding
+      tags: [driver]
+      summary: Save driver onboarding information for review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverOnboardingInput"
+      responses:
+        "200":
+          description: Updated onboarding record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverOnboarding"
+        "400": { description: Invalid onboarding information }
+  /driver/settings:
+    get:
+      operationId: getDriverSettings
+      tags: [driver]
+      summary: Get the signed-in driver's delivery preferences and location freshness
+      responses:
+        "200":
+          description: Driver-owned settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DriverSettings" }
+        "403": { description: Driver role required }
+    patch:
+      operationId: updateDriverSettings
+      tags: [driver]
+      summary: Update the signed-in driver's delivery preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DriverSettingsUpdate" }
+      responses:
+        "200":
+          description: Updated driver settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DriverSettings" }
+        "400": { description: Invalid preferences }
+        "403": { description: Driver role required }
+  /driver/location:
+    patch:
+      operationId: updateDriverAvailabilityLocation
+      tags: [driver]
+      summary: Record the signed-in online driver's eligibility location heartbeat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DriverAvailabilityLocationInput" }
+      responses:
+        "200":
+          description: Driver location recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DriverAvailabilityLocation" }
+        "400": { description: Invalid or stale location heartbeat }
+        "403": { description: Approved online driver required }
+  /driver/documents:
+    post:
+      operationId: createDriverDocument
+      tags: [driver]
+      summary: Confirm a verified private driver document upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverDocumentConfirmationInput"
+      responses:
+        "201":
+          description: Confirmed driver document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverDocument"
+        "400": { description: Invalid or unverified document }
+        "403": { description: Driver role required }
+  /driver/offers:
+    get:
+      operationId: listDriverOffers
+      tags: [driver]
+      summary: List short-lived delivery offers available to an approved online driver
+      responses:
+        "200":
+          description: Available delivery offers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DriverOffer"
+        "403": { description: Approved online driver required }
+  /driver/availability:
+    patch:
+      operationId: updateDriverAvailability
+      tags: [driver]
+      summary: Set an approved driver's online availability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverAvailabilityInput"
+      responses:
+        "200":
+          description: Updated driver profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverProfile"
+        "403": { description: Approved driver required }
+  /driver/deliveries/{id}/accept:
+    post:
+      operationId: acceptDriverDelivery
+      tags: [driver]
+      summary: Atomically accept an offered searching delivery
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      responses:
+        "200":
+          description: Accepted delivery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "400": { description: Invalid delivery identifier }
+        "401": { description: Authentication required }
+        "403": { description: Approved online driver required }
+        "404": { description: Delivery offer not found }
+        "409": { description: "Offer was not made to this driver, expired, or is no longer available" }
+  /driver/deliveries/{id}/decline:
+    post:
+      operationId: declineDriverDelivery
+      tags: [driver]
+      summary: Decline a delivery explicitly offered to the signed-in driver
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      responses:
+        "200":
+          description: Decline recorded (including an idempotent repeat)
+          content: { application/json: { schema: { $ref: "#/components/schemas/DriverOfferDecline" } } }
+        "400": { description: Invalid delivery identifier }
+        "401": { description: Authentication required }
+        "403": { description: Driver role required }
+        "404": { description: Delivery offer not found }
+        "409": { description: Offer belongs to another driver or is no longer declinable }
+  /driver/deliveries/{id}/status:
+    post:
+      operationId: updateDriverDeliveryStatus
+      tags: [delivery]
+      summary: Advance an assigned delivery through a permitted status transition
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryStatusUpdate"
+      responses:
+        "200":
+          description: Updated delivery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "400": { description: Invalid transition }
+        "403": { description: Assignment or role required }
+        "404": { description: Delivery not found }
+        "409": { description: Delivery changed concurrently }
+  /driver/deliveries/{id}/verify-recipient:
+    post:
+      operationId: verifyDriverRecipient
+      tags: [driver]
+      summary: Verify the recipient's one-time delivery code without revealing it
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecipientVerificationInput"
+      responses:
+        "200":
+          description: Verified and completed delivery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Delivery"
+        "400": { description: Incorrect or unavailable verification code }
+        "403": { description: Assignment required }
+  /driver/earnings:
+    get:
+      operationId: getDriverEarnings
+      tags: [driver]
+      summary: Get delivery earnings and payout state for the signed-in driver
+      responses:
+        "200":
+          description: Earnings summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverEarningsSummary"
+        "403": { description: Driver role required }
+  /driver/issues:
+    get:
+      operationId: listDriverIssues
+      tags: [driver]
+      summary: List the signed-in driver's reported incidents
+      responses:
+        "200":
+          description: Driver-owned incidents, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RequesterSupportSource" }
+        "401": { description: Authentication required }
+        "403": { description: Driver role required }
+    post:
+      operationId: createDriverIssue
+      tags: [driver]
+      summary: Report a delivery, safety, customer-unavailable, or package-damage issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverIssueInput"
+      responses:
+        "201":
+          description: Incident recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverIssue"
+        "400": { description: Invalid incident report }
+  /driver/issues/{id}/conversation:
+    get:
+      operationId: listDriverIssueConversation
+      tags: [driver]
+      summary: List the signed-in driver's incident conversation
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      responses:
+        "200":
+          description: Original incident message followed by requester-visible replies
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RequesterSupportConversationEntry" }
+        "403": { description: Driver role required }
+        "404": { description: Driver incident not found }
+    post:
+      operationId: createDriverIssueConversationReply
+      tags: [driver]
+      summary: Reply to the signed-in driver's incident conversation
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RequesterSupportConversationReplyInput" }
+      responses:
+        "200":
+          description: Idempotently accepted existing reply
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequesterSupportConversationReply" }
+        "201":
+          description: Created requester reply
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequesterSupportConversationReply" }
+        "400": { description: Invalid reply }
+        "403": { description: Driver role required }
+        "404": { description: Driver incident not found }
+  /events:
+    get:
+      operationId: subscribeDeliveryEvents
+      tags: [delivery]
+      summary: Subscribe to authorized delivery updates as a server-sent event stream
+      responses:
+        "200":
+          description: Delivery event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /driver/deliveries/{id}/location:
+    post:
+      operationId: updateDriverLocation
+      tags: [delivery]
+      summary: Record a location update for an assigned active delivery
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverLocationInput"
+      responses:
+        "201":
+          description: Location recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DriverLocation"
+        "403": { description: Assignment or role required }
+        "404": { description: Delivery not found }
+        "409": { description: Delivery is no longer active }
+  /admin/deliveries/{id}/status:
+    post:
+      operationId: updateAdminDeliveryStatus
+      tags: [delivery]
+      summary: Advance a delivery as dispatcher or administrator
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryStatusUpdate"
+      responses:
+        "200":
+          description: Updated operational delivery status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeliveryStatusUpdate"
+        "400": { description: Invalid transition }
+        "403": { description: Staff role required }
+        "404": { description: Delivery not found }
+        "409": { description: Delivery changed concurrently }
+  /admin/deliveries:
+    get:
+      operationId: listAdminDeliveries
+      tags: [delivery]
+      summary: List active deliveries for the dispatch workspace
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Search by order number, pickup or dropoff address, or driver name
+          schema: { type: string, maxLength: 160 }
+        - name: filter
+          in: query
+          required: false
+          description: Narrow the list to a dispatch queue
+          schema: { type: string, enum: [all, unassigned, delayed, in_progress], default: all }
+        - name: sort
+          in: query
+          required: false
+          description: Order deliveries by urgency or most recent change
+          schema: { type: string, enum: [urgent, recently_changed], default: urgent }
+      responses:
+        "200":
+          description: Active deliveries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffDelivery"
+        "401": { description: Authentication required }
+        "403": { description: Staff role required }
+  /admin/drivers:
+    get:
+      operationId: listApprovedDrivers
+      tags: [delivery]
+      summary: List approved drivers available to dispatch
+      responses:
+        "200":
+          description: Approved drivers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApprovedDriver"
+        "401": { description: Authentication required }
+        "403": { description: Staff role required }
+  /admin/deliveries/{id}/assign:
+    post:
+      operationId: assignDeliveryDriver
+      tags: [delivery]
+      summary: Assign an approved driver to a searching delivery
+      parameters:
+        - $ref: "#/components/parameters/DeliveryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverAssignment"
+      responses:
+        "200":
+          description: Delivery assignment accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeliveryStatusUpdate"
+        "400": { description: Invalid assignment }
+        "403": { description: Staff role required }
+        "404": { description: Delivery not found }
+        "409": { description: Delivery changed concurrently }
+  /admin/dispatch-alerts:
+    get:
+      operationId: listDispatchAlerts
+      tags: [delivery]
+      summary: List active delivery alerts for the current dispatcher
+      responses:
+        "200":
+          description: Active dispatch alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DispatchAlert"
+        "401": { description: Authentication required }
+        "403": { description: Dispatcher or administrator role required }
+  /admin/dispatch-alerts/{id}/acknowledge:
+    post:
+      operationId: acknowledgeDispatchAlert
+      tags: [delivery]
+      summary: Acknowledge a delivery alert and retain an audit entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Acknowledged dispatch alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DispatchAlert"
+        "403": { description: Dispatcher or administrator role required }
+        "404": { description: Alert not found }
+  /admin/audit-logs:
+    get:
+      operationId: listAdminAuditLogs
+      tags: [delivery]
+      summary: List recent administrative audit events
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+        "401": { description: Authentication required }
+        "403": { description: Staff role required }
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Get staff dashboard metrics and daily delivery trend
+      responses:
+        "200":
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+        "403": { description: Staff role required }
+  /admin/driver-review:
+    get:
+      operationId: listAdminDriverReview
+      tags: [admin]
+      summary: List drivers across review and operational states
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, approved, rejected, suspended] }
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: Driver review list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminDriverReviewListItem" }
+        "403": { description: Admin or dispatcher role required }
+  /admin/drivers/{id}/review:
+    get:
+      operationId: getAdminDriverReview
+      tags: [admin]
+      summary: Get private staff review data for a driver
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Driver review detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDriverReview" }
+        "403": { description: Admin or dispatcher role required }
+        "404": { description: Driver not found }
+  /admin/drivers/{id}/decision:
+    post:
+      operationId: decideAdminDriver
+      tags: [admin]
+      summary: Approve, reject, or suspend a driver with an auditable decision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDriverDecisionInput"
+      responses:
+        "200":
+          description: Updated driver decision
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDriverDecision" }
+        "403": { description: Administrator role required }
+        "404": { description: Driver not found }
+        "409":
+          description: Driver verification incomplete
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DriverVerificationIncomplete" }
+  /admin/drivers/{id}/profile-review:
+    post:
+      operationId: reviewAdminDriverProfileUpdate
+      tags: [admin]
+      summary: Approve or reject a pending driver compliance profile change
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminDriverProfileReviewInput" }
+      responses:
+        "200":
+          description: Completed compliance profile review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DriverProfileUpdateResult" }
+        "403": { description: Administrator role required }
+        "404": { description: Driver or pending profile update not found }
+        "409": { description: Profile update is no longer pending }
+  /admin/driver-documents/{id}/review:
+    post:
+      operationId: reviewAdminDriverDocument
+      tags: [admin]
+      summary: Approve or reject a private driver document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminDocumentReviewInput"
+      responses:
+        "200":
+          description: Updated document review
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDriverDocumentReview" }
+        "403": { description: Administrator role required }
+        "404": { description: Driver document not found }
+  /admin/driver-documents/{id}/download-url:
+    post:
+      operationId: createAdminDriverDocumentDownloadUrl
+      tags: [admin]
+      summary: Create a short-lived private document download URL
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Short-lived private download URL
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrivateDocumentDownload" }
+        "403": { description: Administrator role required }
+        "404": { description: Driver document not found or unavailable }
+  /admin/drivers/{id}/background-check:
+    post:
+      operationId: adjudicateAdminDriverBackgroundCheck
+      tags: [admin]
+      summary: Record a controlled driver background-check result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DriverCheckAdjudicationInput" }
+      responses:
+        "200":
+          description: Background-check adjudication
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DriverCheckAdjudication" }
+        "403": { description: Administrator role required }
+        "404": { description: Driver not found }
+  /admin/drivers/{id}/mvr:
+    post:
+      operationId: adjudicateAdminDriverMvr
+      tags: [admin]
+      summary: Record a controlled driver MVR result
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DriverCheckAdjudicationInput" }
+      responses:
+        "200":
+          description: MVR adjudication
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DriverCheckAdjudication" }
+        "403": { description: Administrator role required }
+        "404": { description: Driver not found }
+  /admin/customers:
+    get:
+      operationId: listAdminCustomers
+      tags: [admin]
+      summary: Search customer-safe staff records
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: Customer records
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminCustomerListItem" }
+        "403": { description: Admin or support role required }
+  /admin/customers/{id}:
+    get:
+      operationId: getAdminCustomer
+      tags: [admin]
+      summary: Get a customer-safe record with delivery and support history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Customer operation detail
+          content:
+            application/json:
+                schema: { $ref: "#/components/schemas/AdminCustomerDetail" }
+        "403": { description: Admin or support role required }
+        "404": { description: Customer not found }
+  /admin/customers/{id}/status:
+    put:
+      operationId: updateAdminCustomerStatus
+      tags: [admin]
+      summary: Suspend or reactivate a customer account
+      description: Suspending revokes all active sessions. This endpoint does not expose authentication material.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminCustomerStatusUpdateInput" }
+      responses:
+        "200":
+          description: Updated customer status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminCustomerStatusUpdate" }
+        "400": { description: Invalid status update }
+        "403": { description: Administrator role required }
+        "404": { description: Customer not found }
+  /admin/payments:
+    get:
+      operationId: listAdminPayments
+      tags: [admin]
+      summary: List secure payment references and statuses
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Payment records without provider secrets
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminPayment" }
+        "403": { description: Administrator role required }
+  /admin/payments/summary:
+    get:
+      operationId: getAdminPaymentsSummary
+      tags: [admin]
+      summary: Get uncapped persisted payment revenue totals
+      responses:
+        "200":
+          description: Payment aggregate without provider data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminPaymentsSummary" }
+        "403": { description: Administrator role required }
+  /admin/payments/{id}/refund:
+    post:
+      operationId: requestAdminPaymentRefund
+      tags: [admin]
+      summary: Request a secure Stripe refund; provider webhook confirms final status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRefundInput"
+      responses:
+        "202":
+          description: Refund accepted by provider and awaiting confirmation
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "403": { description: Administrator role required }
+        "404": { description: Refundable payment not found }
+        "409": { description: Payment cannot be refunded }
+  /admin/support/tickets:
+    get:
+      operationId: listAdminSupportTickets
+      tags: [admin]
+      summary: List the prioritized staff support queue
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, in_progress, resolved] }
+        - name: priority
+          in: query
+          schema: { type: string, enum: [low, normal, high, urgent] }
+      responses:
+        "200":
+          description: Support tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminSupportTicket"
+        "403": { description: Admin or support role required }
+  /admin/support/agents:
+    get:
+      operationId: listAdminSupportAgents
+      tags: [admin]
+      summary: List active administrators and support agents for ticket assignment
+      responses:
+        "200":
+          description: Assignable support staff
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object, additionalProperties: true }
+        "403": { description: Admin or support role required }
+  /admin/support/tickets/{id}:
+    patch:
+      operationId: updateAdminSupportTicket
+      tags: [admin]
+      summary: Assign, prioritize, resolve, or reopen a support ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSupportTicketUpdateInput"
+      responses:
+        "200":
+          description: Updated support ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSupportTicket"
+        "400": { description: Invalid ticket update or missing resolution note }
+        "403": { description: Admin or support role required }
+        "404": { description: Support ticket not found }
+  /admin/support/tickets/{id}/comments/{source}:
+    get:
+      operationId: listAdminSupportTicketComments
+      tags: [admin]
+      summary: List requester-visible conversation entries for an explicit support source
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: source
+          in: path
+          required: true
+          schema: { type: string, enum: [customer_ticket, driver_issue] }
+      responses:
+        "200":
+          description: Conversation origin followed by staff replies
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminSupportConversationEntry" }
+        "403": { description: Admin or support role required }
+        "404": { description: Support ticket not found }
+    post:
+      operationId: createAdminSupportTicketComment
+      tags: [admin]
+      summary: Add a requester-visible, auditable staff reply to an explicit support source
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: source
+          in: path
+          required: true
+          schema: { type: string, enum: [customer_ticket, driver_issue] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSupportTicketCommentInput"
+      responses:
+        "201":
+          description: Created staff reply
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminSupportConversationReply" }
+        "403": { description: Admin or support role required }
+        "404": { description: Support ticket not found }
+  /admin/promotions:
+    get:
+      operationId: listAdminPromotions
+      tags: [admin]
+      summary: List promotion configuration
+      responses:
+        "200":
+          description: Promotion configuration
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object, additionalProperties: true }
+        "403": { description: Administrator role required }
+    post:
+      operationId: createAdminPromotion
+      tags: [admin]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PromotionInput" } } } }
+      responses: { "201": { description: Promotion created, content: { application/json: { schema: { $ref: "#/components/schemas/Promotion" } } } }, "400": { description: Invalid promotion }, "409": { description: Duplicate code } }
+  /admin/analytics:
+    get:
+      operationId: getAdminAnalytics
+      tags: [admin]
+      summary: Get staff analytics for a reporting period
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          description: Inclusive report start date in YYYY-MM-DD format
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        - name: endDate
+          in: query
+          required: false
+          description: Inclusive report end date in YYYY-MM-DD format
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+      responses:
+        "200":
+          description: Analytics series and aggregates
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { description: Invalid reporting period }
+        "403": { description: Admin or dispatcher role required }
+  /admin/analytics/export:
+    get:
+      operationId: exportAdminAnalytics
+      tags: [admin]
+      summary: Download delivery, payment, and promotion analytics as CSV
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          description: Inclusive report start date in YYYY-MM-DD format
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        - name: endDate
+          in: query
+          required: true
+          description: Inclusive report end date in YYYY-MM-DD format
+          schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+      responses:
+        "200":
+          description: CSV report containing delivery, payment, and promotion performance rows
+          content:
+            text/csv:
+              schema: { type: string }
+        "400": { description: Invalid reporting period }
+        "403": { description: Administrator role required }
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      tags: [admin]
+      summary: Get persisted general settings and safe service status
+      responses:
+        "200":
+          description: Settings aggregate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+        "401": { description: Admin authentication required }
+        "403": { description: Administrator role required }
+  /admin/settings/general:
+    put:
+      operationId: updateAdminGeneralSettings
+      tags: [admin]
+      summary: Persist general business settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneralSettingsInput"
+      responses:
+        "200":
+          description: Persisted settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralSettings"
+        "400": { description: Invalid settings }
+        "401": { description: Admin authentication required }
+        "403": { description: Administrator role required }
+  /admin/settings/dispatch:
+    get:
+      operationId: getAdminDispatchSettings
+      tags: [admin]
+      summary: Get persisted staged driver-dispatch controls
+      responses:
+        "200":
+          description: Dispatch settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchSettings" }
+    patch:
+      operationId: updateAdminDispatchSettings
+      tags: [admin]
+      summary: Update persisted staged driver-dispatch controls
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DispatchSettingsInput" }
+      responses:
+        "200":
+          description: Updated dispatch settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DispatchSettings" }
+        "400": { description: Invalid dispatch settings }
+  /admin/settings/admin-users:
+    get:
+      operationId: listAdminSettingsUsers
+      tags: [admin]
+      summary: List staff accounts eligible for the admin workspace
+      responses:
+        "200":
+          description: Safe staff account list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminSettingsUser"
+        "401": { description: Admin authentication required }
+        "403": { description: Administrator role required }
+  /admin/settings/admin-users/{id}:
+    patch:
+      operationId: updateAdminSettingsUser
+      tags: [admin]
+      summary: Update a staff role or account status
+      parameters:
+        - $ref: "#/components/parameters/AdminSettingsUserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettingsUserUpdate"
+      responses:
+        "200":
+          description: Updated safe staff account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettingsUser"
+        "400": { description: Invalid or unsafe change }
+        "401": { description: Admin authentication required }
+        "403": { description: Administrator role required }
+        "404": { description: Staff account not found }
+  /admin/settings/admin-users/{id}/revoke-sessions:
+    post:
+      operationId: revokeAdminSettingsUserSessions
+      tags: [admin]
+      summary: Revoke all sessions for a staff account
+      parameters:
+        - $ref: "#/components/parameters/AdminSettingsUserId"
+      responses:
+        "200":
+          description: Sessions revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionRevocation"
+        "401": { description: Admin authentication required }
+        "403": { description: Administrator role required }
+        "404": { description: Staff account not found }
+  /admin/settings/security:
+    get:
+      operationId: getAdminSecuritySettings
+      tags: [admin]
+      responses: { "200": { description: Security settings, content: { application/json: { schema: { $ref: "#/components/schemas/SecuritySettings" } } } }, "403": { description: Administrator role required } }
+    put:
+      operationId: updateAdminSecuritySettings
+      tags: [admin]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/SecuritySettingsInput" } } } }
+      responses: { "200": { description: Persisted security settings, content: { application/json: { schema: { $ref: "#/components/schemas/SecuritySettings" } } } }, "400": { description: Invalid settings }, "403": { description: Administrator role required } }
+  /admin/settings/security/revoke-other-sessions:
+    post:
+      operationId: revokeOtherAdminSessions
+      tags: [admin]
+      responses: { "200": { description: Other sessions revoked, content: { application/json: { schema: { $ref: "#/components/schemas/SessionRevocation" } } } }, "403": { description: Administrator role required } }
+  /admin/settings/payments-fees:
+    get:
+      operationId: getAdminPaymentFeeSettings
+      tags: [admin]
+      responses: { "200": { description: Payment policy, content: { application/json: { schema: { $ref: "#/components/schemas/PaymentFeeSettings" } } } }, "403": { description: Administrator role required } }
+    put:
+      operationId: updateAdminPaymentFeeSettings
+      tags: [admin]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PaymentFeeSettingsInput" } } } }
+      responses: { "200": { description: Persisted payment policy, content: { application/json: { schema: { $ref: "#/components/schemas/PaymentFeeSettings" } } } }, "400": { description: Invalid policy }, "403": { description: Administrator role required } }
+  /admin/settings/email:
+    get:
+      operationId: getAdminEmailSettings
+      tags: [admin]
+      responses: { "200": { description: Email preferences, content: { application/json: { schema: { $ref: "#/components/schemas/EmailSettings" } } } }, "403": { description: Administrator role required } }
+    put:
+      operationId: updateAdminEmailSettings
+      tags: [admin]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/EmailSettingsInput" } } } }
+      responses: { "200": { description: Persisted email preferences, content: { application/json: { schema: { $ref: "#/components/schemas/EmailSettings" } } } }, "400": { description: Invalid preferences }, "403": { description: Administrator role required } }
+  /admin/settings/email/test:
+    post:
+      operationId: sendAdminSettingsTestEmail
+      tags: [admin]
+      responses: { "202": { description: Test email accepted }, "503": { description: Email provider unavailable }, "403": { description: Administrator role required } }
+  /admin/settings/integrations:
+    get:
+      operationId: getAdminIntegrationHealth
+      tags: [admin]
+      responses: { "200": { description: Redacted integration health, content: { application/json: { schema: { $ref: "#/components/schemas/IntegrationHealth" } } } }, "403": { description: Administrator role required } }
+  /admin/settings/system-status:
+    get:
+      operationId: getAdminSystemStatus
+      tags: [admin]
+      responses: { "200": { description: Live system status, content: { application/json: { schema: { $ref: "#/components/schemas/SystemStatus" } } } }, "403": { description: Administrator role required } }
+  /admin/promotions/{id}:
+    put:
+      operationId: updateAdminPromotion
+      tags: [admin]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PromotionInput" } } } }
+      responses: { "200": { description: Promotion updated, content: { application/json: { schema: { $ref: "#/components/schemas/Promotion" } } } }, "400": { description: Invalid promotion }, "404": { description: Promotion not found } }
+  /admin/promotions/{id}/status:
+    post:
+      operationId: updateAdminPromotionStatus
+      tags: [admin]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PromotionStatusInput" } } } }
+      responses: { "200": { description: Promotion status updated, content: { application/json: { schema: { $ref: "#/components/schemas/Promotion" } } } }, "404": { description: Promotion not found } }
+  /driver/bonuses:
+    get:
+      operationId: getDriverBonusWallet
+      tags: [driver]
+      summary: Get bonus-only wallet transactions for the signed-in driver
+      responses:
+        "200":
+          description: Driver-owned bonus wallet; customer payments and tips are excluded
+          content: { application/json: { schema: { $ref: "#/components/schemas/DriverBonusWallet" } } }
+        "401": { description: Authentication required }
+        "403": { description: Driver role required }
+  /admin/driver-performance:
+    get:
+      operationId: listAdminDriverPerformance
+      tags: [admin]
+      summary: List delivery-derived driver performance for a date range
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: search, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Driver performance rows, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/DriverPerformance" } } } } }
+        "400": { description: "Invalid date range, search, or pagination" }
+        "401": { description: Authentication required }
+        "403": { description: Administrator or dispatcher role required }
+  /admin/driver-performance/detail:
+    get:
+      operationId: getAdminDriverPerformance
+      tags: [admin]
+      summary: Get delivery and reward performance history for one driver
+      parameters:
+        - { name: driverId, in: query, required: true, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        "200": { description: Driver performance detail, content: { application/json: { schema: { $ref: "#/components/schemas/DriverPerformanceDetail" } } } }
+        "400": { description: Invalid driver identifier or date range }
+        "401": { description: Authentication required }
+        "403": { description: Administrator or dispatcher role required }
+        "404": { description: Driver not found }
+  /admin/driver-bonuses:
+    get:
+      operationId: listAdminDriverBonuses
+      tags: [admin]
+      summary: List driver reward awards
+      parameters:
+        - { name: startDate, in: query, schema: { type: string, format: date } }
+        - { name: endDate, in: query, schema: { type: string, format: date } }
+        - { name: search, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: status, in: query, schema: { type: string, enum: [pending, approved, paid, reversed] } }
+      responses:
+        "200": { description: "Awards, newest first", content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/DriverBonus" } } } } }
+        "400": { description: Invalid award filters }
+        "401": { description: Authentication required }
+        "403": { description: Administrator or dispatcher role required }
+    post:
+      operationId: createAdminDriverBonus
+      tags: [admin]
+      summary: Award a pending driver bonus
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DriverBonusInput" } } } }
+      responses:
+        "201": { description: Pending bonus created, content: { application/json: { schema: { $ref: "#/components/schemas/DriverBonus" } } } }
+        "200": { description: Idempotent replay, content: { application/json: { schema: { $ref: "#/components/schemas/DriverBonus" } } } }
+        "400": { description: Invalid award or missing idempotency key }
+        "401": { description: Authentication required }
+        "403": { description: Administrator role required }
+        "409": { description: Idempotency key conflict }
+        "422": { description: Driver is not eligible for an award }
+  /admin/driver-bonuses/summary:
+    get:
+      operationId: getAdminDriverBonusSummary
+      tags: [admin]
+      summary: Get driver reward totals by status
+      responses:
+        "200": { description: Status totals in USD cents, content: { application/json: { schema: { $ref: "#/components/schemas/DriverBonusTotals" } } } }
+        "401": { description: Authentication required }
+        "403": { description: Administrator or dispatcher role required }
+  /admin/driver-bonuses/{id}:
+    get:
+      operationId: getAdminDriverBonus
+      tags: [admin]
+      summary: Get an award and immutable event history
+      parameters: [{ $ref: "#/components/parameters/DriverBonusId" }]
+      responses:
+        "200": { description: Award detail, content: { application/json: { schema: { $ref: "#/components/schemas/DriverBonusDetail" } } } }
+        "400": { description: Invalid award identifier }
+        "401": { description: Authentication required }
+        "403": { description: Administrator or dispatcher role required }
+        "404": { description: Award not found }
+  /admin/driver-bonuses/{id}/status:
+    post:
+      operationId: updateAdminDriverBonusStatus
+      tags: [admin]
+      summary: Approve, pay, or explicitly reverse a driver bonus
+      parameters: [{ $ref: "#/components/parameters/DriverBonusId" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DriverBonusStatusInput" } } } }
+      responses:
+        "200": { description: Updated award or idempotent replay, content: { application/json: { schema: { $ref: "#/components/schemas/DriverBonus" } } } }
+        "400": { description: "Invalid transition, reason, identifier, or missing idempotency key" }
+        "401": { description: Authentication required }
+        "403": { description: Administrator role required }
+        "404": { description: Award not found }
+        "409": { description: Invalid transition or idempotency key conflict }
+components:
+  parameters:
+    DeliveryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    DriverBonusId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    DriverPerformanceId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 255 }
+    AdminSettingsUserId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    AuthSession:
+      type: object
+      required: [profile]
+      properties:
+        profile:
+          type: object
+          required: [id, firstName, lastName, email, emailVerified, phoneVerified, role]
+          properties:
+            id: { type: string }
+            firstName: { type: string }
+            lastName: { type: string }
+            email: { type: string }
+            phone: { type: string, nullable: true }
+            emailVerified: { type: boolean }
+            phoneVerified: { type: boolean }
+            role: { type: string, enum: [customer, driver, admin, dispatcher, support] }
+    RegistrationInput:
+      oneOf:
+        - $ref: "#/components/schemas/CustomerRegistrationInput"
+        - $ref: "#/components/schemas/DriverRegistrationInput"
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+    PasswordResetAccepted:
+      type: object
+      required: [accepted]
+      properties:
+        accepted: { type: boolean, const: true }
+    PasswordResetConfirmation:
+      type: object
+      required: [token, password]
+      properties:
+        token: { type: string, minLength: 1, maxLength: 256 }
+        password: { type: string, minLength: 10, maxLength: 256 }
+    CustomerRegistrationInput:
+      type: object
+      required: [firstName, lastName, email, password, phone]
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 80 }
+        lastName: { type: string, minLength: 1, maxLength: 80 }
+        email:
+          type: string
+          maxLength: 254
+          pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        password: { type: string, minLength: 10, maxLength: 256 }
+        phone:
+          type: string
+          description: Include 10 to 15 digits; separators are allowed.
+          maxLength: 32
+          pattern: '^(?=(?:\D*\d){10,15}\D*$)[+().\s\d-]+$'
+        accountType:
+          type: string
+          enum: [customer]
+          default: customer
+    DriverRegistrationInput:
+      type: object
+      required: [firstName, lastName, email, password, accountType]
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 80 }
+        lastName: { type: string, minLength: 1, maxLength: 80 }
+        email:
+          type: string
+          maxLength: 254
+          pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        password: { type: string, minLength: 10, maxLength: 256 }
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+        accountType:
+          type: string
+          enum: [driver]
+    DeliverySummary:
+      type: object
+      required: [customerName, activeCount, pastCount, savedPlaces]
+      properties:
+        customerName: { type: string }
+        activeCount: { type: number, format: int32 }
+        pastCount: { type: number, format: int32 }
+        savedPlaces:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavedPlace"
+    SavedPlace:
+      type: object
+      required: [id, label, address]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        address: { type: string }
+    SavedAddress:
+      type: object
+      required: [id, label, fullAddress, street, city, state, postalCode, country, latitude, longitude, instructions, isDefault, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        label: { type: string, enum: [Home, Work, Other] }
+        fullAddress: { type: string }
+        street: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        state: { type: ["string", "null"] }
+        postalCode: { type: ["string", "null"] }
+        country: { type: ["string", "null"] }
+        latitude: { type: ["number", "null"] }
+        longitude: { type: ["number", "null"] }
+        instructions: { type: ["string", "null"] }
+        isDefault: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    SavedAddressInput:
+      type: object
+      required: [label, fullAddress]
+      properties:
+        label: { type: string, enum: [Home, Work, Other] }
+        fullAddress: { type: string, minLength: 3, maxLength: 300 }
+        street: { type: ["string", "null"], maxLength: 200 }
+        city: { type: ["string", "null"], maxLength: 120 }
+        state: { type: ["string", "null"], maxLength: 120 }
+        postalCode: { type: ["string", "null"], maxLength: 30 }
+        country: { type: ["string", "null"], maxLength: 120 }
+        latitude: { type: ["number", "null"], minimum: -90, maximum: 90 }
+        longitude: { type: ["number", "null"], minimum: -180, maximum: 180 }
+        instructions: { type: ["string", "null"], maxLength: 500 }
+        isDefault: { type: boolean }
+    AddressSuggestion:
+      type: object
+      required: [id, label, address, latitude, longitude, source]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        address: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        source: { type: string, enum: [google, saved] }
+        street: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        state: { type: ["string", "null"] }
+        postalCode: { type: ["string", "null"] }
+        country: { type: ["string", "null"] }
+    AddressSuggestions:
+      type: object
+      required: [suggestions, providerStatus]
+      properties:
+        suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddressSuggestion"
+        providerStatus: { type: string, enum: [available, unavailable] }
+        message: { type: ["string", "null"] }
+    DeliveryQuoteInput:
+      type: object
+      required: [pickupAddress, dropoffAddress, category, size, weight, care, priority]
+      properties:
+        pickupAddress: { type: string, minLength: 3 }
+        dropoffAddress: { type: string, minLength: 3 }
+        category: { type: string }
+        size: { type: string, enum: [small, medium, large] }
+        weight: { type: string, enum: [under5, 5to20, 20to50] }
+        care: { type: string, enum: [standard, fragile, priority, temperature] }
+        priority: { type: string, enum: [asap, scheduled] }
+        scheduledPickupStartAt: { type: ["string", "null"], format: date-time }
+        scheduledPickupEndAt: { type: ["string", "null"], format: date-time }
+        pickupLatitude: { type: ["number", "null"], minimum: -90, maximum: 90 }
+        pickupLongitude: { type: ["number", "null"], minimum: -180, maximum: 180 }
+        dropoffLatitude: { type: ["number", "null"], minimum: -90, maximum: 90 }
+        dropoffLongitude: { type: ["number", "null"], minimum: -180, maximum: 180 }
+    DeliveryQuote:
+      type: object
+      required: [id, baseFare, distanceFee, careFee, deliveryFee, customerServiceFee, smallOrderFee, policyUpdatedAt, tax, total, eta, paymentMode, scheduledPickupStartAt, scheduledPickupEndAt]
+      properties:
+        id: { type: string }
+        baseFare: { type: number }
+        distanceFee: { type: number }
+        careFee: { type: number }
+        deliveryFee: { type: number }
+        customerServiceFee: { type: number }
+        smallOrderFee: { type: number }
+        policyUpdatedAt: { type: string }
+        tax: { type: number }
+        discount: { type: number }
+        total: { type: number }
+        eta: { type: string }
+        paymentMode: { type: string, enum: [test, stripe] }
+        scheduledPickupStartAt: { type: ["string", "null"], format: date-time }
+        scheduledPickupEndAt: { type: ["string", "null"], format: date-time }
+    DeliveryInput:
+      allOf:
+        - $ref: "#/components/schemas/DeliveryQuoteInput"
+        - type: object
+          required: [quoteId, pickupName, pickupPhone, recipientName, recipientPhone, prohibitedItemsConfirmed]
+          properties:
+            quoteId: { type: string }
+            pickupName: { type: string, minLength: 1 }
+            pickupPhone: { type: string, minLength: 7 }
+            pickupInstructions: { type: string }
+            recipientName: { type: string, minLength: 1 }
+            recipientPhone: { type: string, minLength: 7 }
+            deliveryInstructions: { type: string }
+            promotionCode: { type: string, minLength: 1, maxLength: 100 }
+            prohibitedItemsConfirmed: { type: boolean, enum: [true] }
+    Delivery:
+      type: object
+      required: [id, orderNumber, pickupAddress, dropoffAddress, category, care, total, status, eta, createdAt, recipientName, driverName, driverRating, vehicle, pickupContactName, pickupContactPhone, pickupInstructions, recipientPhone, deliveryInstructions, size, weight, deliveryDistanceMiles, expectedMinutes, mapMode, prohibitedItemsConfirmed, prohibitedItemsConfirmedAt, prohibitedItemsPolicyVersion, scheduledPickupStartAt, scheduledPickupEndAt, events]
+      properties:
+        id: { type: string }
+        orderNumber: { type: string }
+        pickupAddress: { type: string }
+        dropoffAddress: { type: string }
+        category: { type: string }
+        care: { type: string }
+        total: { type: number }
+        status: { type: string }
+        eta: { type: string }
+        createdAt: { type: string }
+        recipientName: { type: string }
+        driverName: { type: ["string", "null"] }
+        driverRating: { type: ["number", "null"] }
+        vehicle: { type: ["string", "null"] }
+        pickupContactName: { type: string }
+        pickupContactPhone: { type: string }
+        pickupInstructions: { type: ["string", "null"] }
+        recipientPhone: { type: string }
+        deliveryInstructions: { type: ["string", "null"] }
+        size: { type: string }
+        weight: { type: string }
+        deliveryDistanceMiles: { type: ["number", "null"] }
+        expectedMinutes: { type: ["number", "null"], format: int32 }
+        scheduledPickupStartAt: { type: ["string", "null"], format: date-time }
+        scheduledPickupEndAt: { type: ["string", "null"], format: date-time }
+        mapMode: { type: string, enum: [verified, demo] }
+        pickupLatitude: { type: ["number", "null"] }
+        pickupLongitude: { type: ["number", "null"] }
+        dropoffLatitude: { type: ["number", "null"] }
+        dropoffLongitude: { type: ["number", "null"] }
+        prohibitedItemsConfirmed: { type: boolean }
+        prohibitedItemsConfirmedAt: { type: ["string", "null"], format: date-time }
+        prohibitedItemsPolicyVersion: { type: ["string", "null"] }
+        driverLocation:
+          oneOf:
+            - $ref: "#/components/schemas/DriverLocation"
+            - type: "null"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryEvent"
+    StaffDelivery:
+      type: object
+      required: [id, orderNumber, pickupAddress, dropoffAddress, category, care, status, eta, createdAt, driverName, vehicle, size, weight, deliveryDistanceMiles, expectedMinutes, scheduledPickupStartAt, scheduledPickupEndAt, pickupLatitude, pickupLongitude, dropoffLatitude, dropoffLongitude, mapMode, events, driverId, driverLocation, priority, updatedAt, isDelayed]
+      properties:
+        id: { type: string }
+        orderNumber: { type: string }
+        pickupAddress: { type: string }
+        dropoffAddress: { type: string }
+        category: { type: string }
+        care: { type: string }
+        status: { type: string }
+        eta: { type: string }
+        createdAt: { type: string }
+        driverName: { type: ["string", "null"] }
+        vehicle: { type: ["string", "null"] }
+        size: { type: string }
+        weight: { type: string }
+        deliveryDistanceMiles: { type: ["number", "null"] }
+        expectedMinutes: { type: ["number", "null"], format: int32 }
+        scheduledPickupStartAt: { type: ["string", "null"], format: date-time }
+        scheduledPickupEndAt: { type: ["string", "null"], format: date-time }
+        pickupLatitude: { type: ["number", "null"] }
+        pickupLongitude: { type: ["number", "null"] }
+        dropoffLatitude: { type: ["number", "null"] }
+        dropoffLongitude: { type: ["number", "null"] }
+        mapMode: { type: string, enum: [verified, demo] }
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryEvent"
+        driverId: { type: ["string", "null"] }
+        driverLocation:
+          oneOf:
+            - $ref: "#/components/schemas/DriverLocation"
+            - type: "null"
+        priority: { type: string, enum: [asap, scheduled] }
+        updatedAt: { type: string }
+        isDelayed: { type: boolean }
+    AdminDeliveryStatusUpdate:
+      type: object
+      required: [id, status, updatedAt]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        updatedAt: { type: string }
+    DispatchAlert:
+      type: object
+      required: [id, deliveryId, orderNumber, type, title, message, recommendedAction, createdAt, acknowledgedAt]
+      properties:
+        id: { type: string }
+        deliveryId: { type: string }
+        orderNumber: { type: string }
+        type: { type: string, enum: [delivery_failed, delivery_cancelled, delivery_delayed] }
+        title: { type: string }
+        message: { type: string }
+        recommendedAction: { type: string }
+        createdAt: { type: string, format: date-time }
+        acknowledgedAt: { type: ["string", "null"], format: date-time }
+    ApprovedDriver:
+      type: object
+      required: [id, name, vehicle, availabilityStatus, totalDeliveries]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        vehicle: { type: ["string", "null"] }
+        availabilityStatus: { type: string }
+        totalDeliveries: { type: number }
+    CheckoutDelivery:
+      allOf:
+        - $ref: "#/components/schemas/Delivery"
+        - type: object
+          required: [payment]
+          properties:
+            payment:
+              type: object
+              required: [provider, paymentIntentId, clientSecret]
+              properties:
+                provider: { type: string, enum: [stripe] }
+                paymentIntentId: { type: string }
+                clientSecret: { type: string }
+    StripePaymentConfig:
+      type: object
+      required: [publishableKey]
+      properties:
+        publishableKey: { type: string }
+    DeliveryEvent:
+      type: object
+      required: [label, completed]
+      properties:
+        label: { type: string }
+        completed: { type: boolean }
+        time: { type: ["string", "null"] }
+    RoutePoint:
+      type: object
+      required: [latitude, longitude, label]
+      properties:
+        latitude: { type: ["number", "null"] }
+        longitude: { type: ["number", "null"] }
+        label: { type: string }
+    DeliveryRoute:
+      type: object
+      required: [status, pickup, dropoff, driverLocation, distanceMeters, durationSeconds, encodedPolyline, message]
+      properties:
+        status: { type: string, enum: [available, unavailable, demo] }
+        pickup:
+          $ref: "#/components/schemas/RoutePoint"
+        dropoff:
+          $ref: "#/components/schemas/RoutePoint"
+        driverLocation:
+          oneOf:
+            - $ref: "#/components/schemas/DriverLocation"
+            - type: "null"
+        distanceMeters: { type: ["number", "null"] }
+        durationSeconds: { type: ["number", "null"] }
+        encodedPolyline: { type: ["string", "null"] }
+        message: { type: ["string", "null"] }
+    DeliveryPhotoUploadInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        size: { type: number, minimum: 1, maximum: 10485760 }
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+    DeliveryPhotoUpload:
+      type: object
+      required: [uploadURL, objectPath, expiresAt]
+      properties:
+        uploadURL: { type: string }
+        objectPath: { type: string }
+        expiresAt: { type: string, format: date-time }
+    DeliveryPhotoAttachInput:
+      type: object
+      required: [objectPath, size, contentType]
+      properties:
+        objectPath: { type: string }
+        size: { type: number, minimum: 1, maximum: 10485760 }
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+    DeliveryPhoto:
+      type: object
+      required: [id, deliveryId, contentType, size, downloadUrl, createdAt]
+      properties:
+        id: { type: string }
+        deliveryId: { type: string }
+        contentType: { type: string }
+        size: { type: number }
+        downloadUrl: { type: string }
+        createdAt: { type: string, format: date-time }
+    SupportTicketInput:
+      type: object
+      required: [category, message]
+      properties:
+        category: { type: string }
+        message: { type: string, minLength: 5 }
+    SupportTicket:
+      type: object
+      required: [id, category, message, status, createdAt]
+      properties:
+        id: { type: string }
+        category: { type: string }
+        message: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+    RequesterSupportConversationPreview:
+      type: object
+      required: [body, createdAt, authorRole]
+      properties:
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        authorRole: { type: string, enum: [requester, staff] }
+    RequesterSupportSource:
+      type: object
+      required: [id, source, category, status, priority, createdAt, updatedAt, lastConversationPreview, hasSupportReply]
+      properties:
+        id: { type: string }
+        source: { type: string, enum: [customer_ticket, driver_issue] }
+        category: { type: string }
+        status: { type: string }
+        priority: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        lastConversationPreview:
+          oneOf:
+            - $ref: "#/components/schemas/RequesterSupportConversationPreview"
+            - type: "null"
+        hasSupportReply: { type: boolean, description: True when the latest requester-visible conversation entry is a staff reply. }
+    Notification:
+      type: object
+      required: [id, type, title, body, readAt, createdAt, supportSource, supportId]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        title: { type: string }
+        body: { type: string }
+        readAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        supportSource: { type: [string, "null"], enum: [customer_ticket, driver_issue, null] }
+        supportId: { type: [string, "null"] }
+    AdminSupportRequester:
+      type: object
+      required: [role, name, email, phone]
+      properties:
+        role: { type: string, enum: [customer, driver] }
+        name: { type: string }
+        email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+    AdminCustomerListItem:
+      type: object
+      required: [id, firstName, lastName, email, phone, status, createdAt, deliveryCount, deliveryStatusCounts]
+      properties:
+        id: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string }
+        phone: { type: [string, "null"] }
+        status: { type: string, enum: [active, suspended] }
+        createdAt: { type: string, format: date-time }
+        deliveryCount: { type: number }
+        deliveryStatusCounts:
+          type: object
+          additionalProperties: { type: number }
+    AdminCustomerDelivery:
+      type: object
+      required: [id, orderNumber, status, total, createdAt]
+      properties:
+        id: { type: string }
+        orderNumber: { type: string }
+        status: { type: string }
+        total: { type: number }
+        createdAt: { type: string, format: date-time }
+    AdminCustomerDetail:
+      type: object
+      required: [customer, deliveries, deliveryStatusCounts, supportTickets]
+      properties:
+        customer: { $ref: "#/components/schemas/AdminCustomerListItem" }
+        deliveries:
+          type: array
+          items: { $ref: "#/components/schemas/AdminCustomerDelivery" }
+        deliveryStatusCounts:
+          type: object
+          additionalProperties: { type: number }
+        supportTickets:
+          type: array
+          items: { $ref: "#/components/schemas/SupportTicket" }
+    AdminCustomerStatusUpdateInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [active, suspended] }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+    AdminCustomerStatusUpdate:
+      type: object
+      required: [id, status, revokedSessionCount]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [active, suspended] }
+        revokedSessionCount: { type: number }
+    AdminRefundHistory:
+      type: object
+      required: [status, createdAt, updatedAt]
+      properties:
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AdminPayment:
+      type: object
+      required: [id, status, amount, currency, provider, createdAt, orderNumber, deliveryId, customerName, refund]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        provider: { type: string }
+        createdAt: { type: string, format: date-time }
+        orderNumber: { type: string }
+        deliveryId: { type: string }
+        customerName: { type: string }
+        refund:
+          oneOf:
+            - $ref: "#/components/schemas/AdminRefundHistory"
+            - type: "null"
+    AdminPaymentsSummary:
+      type: object
+      required: [grossPaidRevenue, paidCount, refundedAmount, refundedCount, platformRevenue]
+      properties:
+        grossPaidRevenue: { type: number }
+        paidCount: { type: number }
+        refundedAmount: { type: number }
+        refundedCount: { type: number }
+        platformRevenue:
+          type: number
+          description: Gross paid revenue less payments confirmed refunded in persisted records.
+    AdminSupportResolver:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+    AdminSupportTicket:
+      type: object
+      required: [id, reference, source, category, message, status, priority, assignedProfileId, assignee, createdAt, updatedAt, requester, deliveryId, orderNumber, resolution, resolvedAt, resolvedBy]
+      properties:
+        id: { type: string }
+        reference: { type: string, description: Stable staff-facing ticket reference. }
+        source: { type: string, enum: [customer_ticket, driver_issue] }
+        category: { type: string }
+        message: { type: string }
+        status: { type: string, enum: [open, in_progress, resolved] }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        assignedProfileId: { type: ["string", "null"] }
+        assignee:
+          oneOf:
+            - $ref: "#/components/schemas/AdminSupportResolver"
+            - type: "null"
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        requester:
+          $ref: "#/components/schemas/AdminSupportRequester"
+        deliveryId: { type: [string, "null"], description: Public delivery identifier when linked. }
+        orderNumber: { type: [string, "null"] }
+        resolution: { type: [string, "null"] }
+        resolvedAt: { type: [string, "null"], format: date-time }
+        resolvedBy:
+          oneOf:
+            - $ref: "#/components/schemas/AdminSupportResolver"
+            - type: "null"
+    DeliveryStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [draft, quoted, payment_pending, paid, searching_driver, driver_assigned, driver_en_route_pickup, driver_arrived_pickup, pickup_verified, picked_up, in_transit, driver_arrived_delivery, delivery_verification_pending, delivered, cancelled, failed, refunded]
+        reason: { type: string, maxLength: 500 }
+    DriverLocationInput:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        accuracyMeters: { type: number, minimum: 0 }
+        capturedAt: { type: string, format: date-time }
+    DriverAssignment:
+      type: object
+      required: [driverId]
+      properties:
+        driverId: { type: string }
+    DriverLocation:
+      type: object
+      required: [id, deliveryId, latitude, longitude, capturedAt]
+      properties:
+        id: { type: string }
+        deliveryId: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        accuracyMeters: { type: ["number", "null"] }
+        capturedAt: { type: string }
+    DriverSettings:
+      type: object
+      required: [notificationSound, vibration, workingHoursEnabled, navigationApp, preferredMaxRangeMiles, workingHours, timeZone, location]
+      properties:
+        notificationSound: { type: boolean }
+        vibration: { type: boolean }
+        workingHoursEnabled: { type: boolean }
+        navigationApp: { type: string, enum: [google_maps, apple_maps, waze, system] }
+        preferredMaxRangeMiles: { type: integer, enum: [3, 5, 8, 12] }
+        workingHours:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              required: [start, end]
+              additionalProperties: false
+              properties:
+                start: { type: string, pattern: '^\d{2}:\d{2}$' }
+                end: { type: string, pattern: '^\d{2}:\d{2}$' }
+        timeZone: { type: string }
+        location:
+          type: object
+          required: [status, lastUpdatedAt]
+          properties:
+            status: { type: string, enum: [fresh, stale, unavailable] }
+            lastUpdatedAt: { type: ["string", "null"], format: date-time }
+    DriverSettingsUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        notificationSound: { type: boolean }
+        vibration: { type: boolean }
+        workingHoursEnabled: { type: boolean }
+        navigationApp: { type: string, enum: [google_maps, apple_maps, waze, system] }
+        preferredMaxRangeMiles: { type: integer, enum: [3, 5, 8, 12] }
+        workingHours:
+          type: object
+          additionalProperties:
+            type: array
+            maxItems: 4
+            items:
+              type: object
+              required: [start, end]
+              additionalProperties: false
+              properties:
+                start: { type: string, pattern: '^\d{2}:\d{2}$' }
+                end: { type: string, pattern: '^\d{2}:\d{2}$' }
+    DriverAvailabilityLocationInput:
+      type: object
+      required: [latitude, longitude]
+      additionalProperties: false
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        capturedAt: { type: string, format: date-time }
+    DriverAvailabilityLocation:
+      type: object
+      required: [latitude, longitude, capturedAt]
+      properties:
+        latitude: { type: number }
+        longitude: { type: number }
+        capturedAt: { type: string, format: date-time }
+    DriverProfile:
+      type: object
+      required: [id, firstName, lastName, email, approvalStatus, availabilityStatus, rating, completedDeliveries]
+      properties:
+        id: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string }
+        phone: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        emergencyContactName: { type: ["string", "null"] }
+        emergencyContactPhone: { type: ["string", "null"] }
+        approvalStatus: { type: string, enum: [pending, approved, rejected] }
+        availabilityStatus: { type: string, enum: [offline, online] }
+        rating: { type: number }
+        completedDeliveries: { type: number, format: int32 }
+        vehicle: { type: ["string", "null"] }
+        licensePlate: { type: ["string", "null"] }
+        complianceReviewStatus: { type: string, enum: [none, pending, approved, rejected] }
+        complianceReviewReason: { type: ["string", "null"] }
+    DriverProfileUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 100 }
+        lastName: { type: string, minLength: 1, maxLength: 100 }
+        phone: { type: string, minLength: 7, maxLength: 32 }
+        address: { type: string, minLength: 3, maxLength: 240 }
+        emergencyContactName: { type: string, minLength: 1, maxLength: 120 }
+        emergencyContactPhone: { type: string, minLength: 7, maxLength: 32 }
+        vehicleType: { type: string, enum: [sedan, suv, van, truck] }
+        vehicleYear: { type: number, minimum: 1990, maximum: 2100, multipleOf: 1 }
+        vehicleMake: { type: string, minLength: 1, maxLength: 100 }
+        vehicleModel: { type: string, minLength: 1, maxLength: 100 }
+        vehicleColor: { type: string, minLength: 1, maxLength: 100 }
+        licensePlate: { type: string, minLength: 1, maxLength: 32 }
+        licenseState: { type: string, minLength: 2, maxLength: 2 }
+        licenseLastFour: { type: string, minLength: 4, maxLength: 4 }
+        insuranceProvider: { type: string, minLength: 1, maxLength: 160 }
+        insuranceExpiresAt: { type: string, format: date }
+    DriverProfileUpdateResult:
+      type: object
+      required: [profile, complianceReviewStatus, complianceReviewReason]
+      properties:
+        profile: { $ref: "#/components/schemas/DriverProfile" }
+        complianceReviewStatus: { type: string, enum: [none, pending, approved, rejected] }
+        complianceReviewReason: { type: ["string", "null"] }
+    AdminDriverProfileReviewInput:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approved, rejected] }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+    DriverOnboarding:
+      type: object
+      required: [profile, onboardingStatus, backgroundCheckStatus, vehicleType, vehicleMake, vehicleModel, vehicleColor, licensePlate, documents]
+      properties:
+        profile:
+          $ref: "#/components/schemas/DriverProfile"
+        onboardingStatus: { type: string, enum: [pending, submitted, approved, rejected] }
+        backgroundCheckStatus: { type: string, enum: [not_started, pending, clear, review] }
+        licenseState: { type: ["string", "null"] }
+        licenseLastFour: { type: ["string", "null"] }
+        insuranceProvider: { type: ["string", "null"] }
+        insuranceExpiresAt: { type: ["string", "null"], format: date }
+        vehicleType: { type: ["string", "null"], enum: [sedan, suv, van, truck, null] }
+        vehicleMake: { type: ["string", "null"] }
+        vehicleModel: { type: ["string", "null"] }
+        vehicleColor: { type: ["string", "null"] }
+        vehicleYear: { type: ["number", "null"] }
+        licensePlate: { type: ["string", "null"] }
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverDocument"
+    DriverOnboardingInput:
+      type: object
+      properties:
+        firstName: { type: string, minLength: 1 }
+        lastName: { type: string, minLength: 1 }
+        phone: { type: string, minLength: 7 }
+        licenseState: { type: string, minLength: 2, maxLength: 2 }
+        licenseLastFour: { type: string, minLength: 4, maxLength: 4 }
+        vehicleType: { type: string, enum: [sedan, suv, van, truck] }
+        vehicleYear: { type: number, minimum: 1990, maximum: 2100, multipleOf: 1 }
+        vehicleMake: { type: string, minLength: 1 }
+        vehicleModel: { type: string, minLength: 1 }
+        vehicleColor: { type: string, minLength: 1 }
+        licensePlate: { type: string, minLength: 1 }
+        insuranceProvider: { type: string, minLength: 1 }
+        insuranceExpiresAt: { type: string, format: date }
+        acknowledgeSafety: { type: boolean }
+    DriverDocumentConfirmationInput:
+      type: object
+      required: [documentType, objectPath]
+      properties:
+        documentType: { type: string, enum: [driver_photo, license, insurance, vehicle_registration] }
+        objectPath: { type: string, minLength: 1 }
+        expiryDate: { type: string, format: date }
+    DriverDocument:
+      type: object
+      required: [id, documentType, verificationStatus, createdAt]
+      properties:
+        id: { type: string }
+        documentType: { type: string, enum: [driver_photo, license, insurance, vehicle_registration] }
+        verificationStatus: { type: string, enum: [pending, approved, rejected] }
+        expiryDate: { type: ["string", "null"], format: date }
+        rejectionReason: { type: ["string", "null"] }
+        createdAt: { type: string }
+    DriverAvailabilityInput:
+      type: object
+      required: [availabilityStatus]
+      properties:
+        availabilityStatus: { type: string, enum: [offline, online] }
+    DriverOffer:
+      type: object
+      required: [id, orderNumber, pickupArea, dropoffArea, pickupDistanceMiles, estimatedPickupMinutes, distanceSource, deliveryDistanceMiles, expectedMinutes, scheduledPickupStartAt, scheduledPickupEndAt, category, size, care, earnings, expiresAt]
+      properties:
+        id: { type: string }
+        orderNumber: { type: string }
+        pickupArea: { type: string }
+        dropoffArea: { type: string }
+        pickupDistanceMiles: { type: ["number", "null"] }
+        estimatedPickupMinutes: { type: ["number", "null"] }
+        distanceSource: { type: string, enum: [road, fallback] }
+        deliveryDistanceMiles: { type: ["number", "null"] }
+        expectedMinutes: { type: number, format: int32 }
+        scheduledPickupStartAt: { type: ["string", "null"], format: date-time }
+        scheduledPickupEndAt: { type: ["string", "null"], format: date-time }
+        category: { type: string }
+        size: { type: string }
+        care: { type: string }
+        earnings: { type: number }
+        expiresAt: { type: string }
+    DriverOfferDecline:
+      type: object
+      required: [id, response]
+      properties:
+        id: { type: string }
+        response: { type: string, enum: [declined] }
+    RecipientVerificationInput:
+      type: object
+      required: [otp]
+      properties:
+        otp: { type: string, minLength: 4, maxLength: 12 }
+    RecipientVerification:
+      type: object
+      required: [code, expiresAt]
+      properties:
+        code: { type: string, pattern: '^\d{6}$' }
+        expiresAt: { type: string, format: date-time }
+    DriverEarningsSummary:
+      type: object
+      required: [today, week, month, bonuses, adjustments, payoutStatus, recent]
+      properties:
+        today: { type: number }
+        week: { type: number }
+        month: { type: number }
+        bonuses: { type: number }
+        adjustments: { type: number }
+        payoutStatus: { type: string, enum: [pending, processing, paid, unavailable] }
+        recent:
+          type: array
+          items:
+            $ref: "#/components/schemas/DriverEarning"
+    DriverEarning:
+      type: object
+      required: [id, orderNumber, amount, status, createdAt]
+      properties:
+        id: { type: string }
+        orderNumber: { type: string }
+        amount: { type: number }
+        adjustment: { type: number }
+        status: { type: string }
+        createdAt: { type: string }
+    DriverPerformance:
+      type: object
+      required: [driverId, name, completedDeliveries, acceptanceRate, acceptanceAccepted, acceptanceDeclined, onTimeRate, rating, cancellations, bonusTotals, acceptanceDefinition, onTimeDefinition]
+      properties:
+        driverId: { type: string }
+        name: { type: string }
+        completedDeliveries: { type: number }
+        acceptanceRate: { type: ["number", "null"], description: Accepted persisted driver-offer responses divided by accepted plus declined responses in the selected period. Expired/unresponded offers are excluded; assignments without an offer response are not inferred as accepts. }
+        acceptanceAccepted: { type: number }
+        acceptanceDeclined: { type: number }
+        onTimeRate: { type: ["number", "null"], description: Delivered assignments completed no later than assignedAt plus estimatedDurationMinutes; null when no delivered assignment has a computable estimate. }
+        rating: { type: ["number", "null"] }
+        cancellations: { type: number }
+        bonusTotals: { $ref: "#/components/schemas/DriverBonusTotals" }
+        acceptanceDefinition: { type: string }
+        onTimeDefinition: { type: string }
+    DriverPerformanceHistory:
+      type: object
+      required: [id, status, assignedAt, deliveredAt, cancelledAt, estimatedDurationMinutes]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        assignedAt: { type: ["string", "null"], format: date-time }
+        deliveredAt: { type: ["string", "null"], format: date-time }
+        cancelledAt: { type: ["string", "null"], format: date-time }
+        estimatedDurationMinutes: { type: ["number", "null"] }
+    DriverPerformanceDetail:
+      type: object
+      required: [performance, deliveries, bonuses]
+      properties:
+        performance: { $ref: "#/components/schemas/DriverPerformance" }
+        deliveries: { type: array, items: { $ref: "#/components/schemas/DriverPerformanceHistory" } }
+        bonuses: { type: array, items: { $ref: "#/components/schemas/DriverBonus" } }
+    DriverBonus:
+      type: object
+      required: [id, driverId, amountCents, currency, type, reason, status, issuedByProfileId, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        driverId: { type: string }
+        amountCents: { type: number, minimum: 1, maximum: 100000000, multipleOf: 1, description: Integer USD cents. }
+        currency: { type: string, enum: [USD] }
+        type: { type: string, enum: [on_time, weekend, streak, manual_performance] }
+        reason: { type: string }
+        note: { type: ["string", "null"] }
+        performancePeriodStart: { type: ["string", "null"], format: date-time }
+        performancePeriodEnd: { type: ["string", "null"], format: date-time }
+        status: { type: string, enum: [pending, approved, paid, reversed] }
+        issuedByProfileId: { type: string }
+        approvedAt: { type: ["string", "null"], format: date-time }
+        paidAt: { type: ["string", "null"], format: date-time }
+        reversedAt: { type: ["string", "null"], format: date-time }
+        reversalReason: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DriverBonusInput:
+      type: object
+      required: [driverId, amountCents, type, reason]
+      properties:
+        driverId: { type: string }
+        amountCents: { type: number, minimum: 1, maximum: 100000000, multipleOf: 1 }
+        type: { type: string, enum: [on_time, weekend, streak, manual_performance] }
+        reason: { type: string, minLength: 3, maxLength: 1000 }
+        note: { type: string, maxLength: 2000 }
+        performancePeriodStart: { type: string, format: date-time }
+        performancePeriodEnd: { type: string, format: date-time }
+    DriverBonusStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [approved, paid, reversed] }
+        reason: { type: string, minLength: 3, maxLength: 1000, description: Required when status is reversed. }
+    DriverBonusEvent:
+      type: object
+      required: [id, bonusId, type, createdAt]
+      properties:
+        id: { type: string }
+        bonusId: { type: string }
+        type: { type: string, enum: [created, approved, paid, reversed] }
+        fromStatus: { type: ["string", "null"] }
+        toStatus: { type: ["string", "null"] }
+        actorProfileId: { type: ["string", "null"] }
+        reason: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    DriverBonusDetail:
+      type: object
+      required: [bonus, events]
+      properties:
+        bonus: { $ref: "#/components/schemas/DriverBonus" }
+        events: { type: array, items: { $ref: "#/components/schemas/DriverBonusEvent" } }
+    DriverBonusTotals:
+      type: object
+      required: [pendingCents, approvedCents, paidCents, reversedCents, totalCents]
+      properties:
+        pendingCents: { type: number }
+        approvedCents: { type: number }
+        paidCents: { type: number }
+        reversedCents: { type: number }
+        totalCents: { type: number }
+    DriverBonusWallet:
+      type: object
+      required: [pendingCents, approvedCents, paidCents, reversedCents, transactions]
+      properties:
+        pendingCents: { type: number }
+        approvedCents: { type: number }
+        paidCents: { type: number }
+        reversedCents: { type: number }
+        transactions:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/DriverBonus"
+              - type: object
+                required: [label]
+                properties: { label: { type: string, enum: [Bonus] } }
+    DriverIssueInput:
+      type: object
+      required: [category, message]
+      properties:
+        deliveryId: { type: string }
+        category: { type: string, enum: [safety, customer_unavailable, package_damaged, return_package, delivery_issue] }
+        message: { type: string, minLength: 5, maxLength: 2000 }
+    DriverIssue:
+      type: object
+      required: [id, category, status, createdAt]
+      properties:
+        id: { type: string }
+        category: { type: string }
+        status: { type: string }
+        createdAt: { type: string }
+    AuditLog:
+      type: object
+      required: [id, action, entityType, createdAt, actorName, entityLabel, driverName]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: ["string", "null"] }
+        createdAt: { type: string }
+        actorName: { type: ["string", "null"] }
+        entityLabel: { type: ["string", "null"] }
+        driverName: { type: ["string", "null"] }
+        metadata:
+          type: object
+          additionalProperties: true
+    AdminDashboard:
+      type: object
+      required: [deliveriesToday, activeDeliveries, searchingForDriver, driversOnline, completedToday, cancelledToday, averageDeliveryMinutes, trend]
+      properties:
+        deliveriesToday: { type: number }
+        activeDeliveries: { type: number }
+        searchingForDriver: { type: number }
+        driversOnline: { type: number }
+        completedToday: { type: number }
+        cancelledToday: { type: number }
+        revenue: { type: number }
+        averageDeliveryMinutes: { type: ["number", "null"] }
+        trend:
+          type: array
+          items:
+            type: object
+            required: [date, deliveries]
+            properties:
+              date: { type: string, format: date }
+              deliveries: { type: number }
+              revenue: { type: number }
+    AdminDriverDecisionInput:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approved, rejected, suspended] }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+    DriverCheckAdjudicationInput:
+      type: object
+      required: [status]
+      additionalProperties: false
+      properties:
+        status: { type: string, enum: [not_started, pending, clear, review] }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+        reference: { type: string, maxLength: 500 }
+    DriverCheckAdjudication:
+      type: object
+      required: [status, checkedAt]
+      properties:
+        status: { type: string, enum: [not_started, pending, clear, review] }
+        checkedAt: { type: ["string", "null"], format: date-time }
+    PrivateDocumentDownload:
+      type: object
+      required: [url, expiresAt]
+      properties:
+        url: { type: string, pattern: "^https?://" }
+        expiresAt: { type: string, format: date-time }
+    DriverVerificationRequirement:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+    DriverVerificationIncomplete:
+      type: object
+      required: [error, requirements]
+      properties:
+        error: { type: string }
+        requirements:
+          type: array
+          items: { $ref: "#/components/schemas/DriverVerificationRequirement" }
+    AdminDriverDecision:
+      type: object
+      required: [id, approvalStatus, accountStatus]
+      properties:
+        id: { type: string }
+        approvalStatus: { type: string, enum: [approved, rejected, suspended] }
+        accountStatus: { type: string, enum: [active, suspended] }
+    AdminDriverDocumentReview:
+      type: object
+      required: [id, verificationStatus]
+      properties:
+        id: { type: string }
+        verificationStatus: { type: string, enum: [approved, rejected] }
+    AdminDriverReviewListItem:
+      type: object
+      required: [id, firstName, lastName, approvalStatus, availabilityStatus, totalDeliveries, updatedAt, onboardingStatus, activeDelivery, earningsTotal, earningsCount]
+      properties:
+        id: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        avatarUrl: { type: ["string", "null"] }
+        approvalStatus: { type: string, enum: [pending, approved, rejected, suspended] }
+        availabilityStatus: { type: string }
+        totalDeliveries: { type: number }
+        vehicleType: { type: ["string", "null"] }
+        vehicleMake: { type: ["string", "null"] }
+        vehicleModel: { type: ["string", "null"] }
+        vehicleColor: { type: ["string", "null"] }
+        vehicle: { type: ["string", "null"] }
+        updatedAt: { type: string, format: date-time }
+        onboardingStatus: { type: string }
+        activeDelivery:
+          oneOf:
+            - type: object
+              required: [id, orderNumber, status]
+              properties:
+                id: { type: string }
+                orderNumber: { type: string }
+                status: { type: string }
+            - type: "null"
+        earningsTotal: { type: number }
+        earningsCount: { type: number }
+        profileId: { type: string }
+        email: { type: string }
+        phone: { type: ["string", "null"] }
+        accountStatus: { type: string }
+        licensePlate: { type: ["string", "null"] }
+        rating: { type: number }
+        complianceReviewStatus:
+          type: string
+          enum: [none, pending, approved, rejected]
+          description: Admin-only post-approval compliance change state.
+        pendingProfileChanges:
+          description: Admin-only requested compliance values. Never includes private document paths.
+          anyOf:
+            - $ref: "#/components/schemas/PendingDriverProfileChanges"
+            - type: "null"
+        pendingProfileSubmittedAt: { type: ["string", "null"], format: date-time }
+        complianceReviewReason: { type: ["string", "null"] }
+    PendingDriverProfileChanges:
+      type: object
+      additionalProperties: false
+      properties:
+        vehicleType: { type: string, enum: [sedan, suv, van, truck] }
+        vehicleYear: { type: number, minimum: 1990, maximum: 2100, multipleOf: 1 }
+        vehicleMake: { type: string }
+        vehicleModel: { type: string }
+        vehicleColor: { type: string }
+        licensePlate: { type: string }
+        licenseState: { type: string }
+        licenseLastFour: { type: string }
+        insuranceProvider: { type: string }
+        insuranceExpiresAt: { type: string, format: date }
+    AdminDriverReviewDriver:
+      type: object
+      required: [id, profileId, firstName, lastName, email, phone, avatarUrl, accountStatus, approvalStatus, availabilityStatus, rating, totalDeliveries, vehicleType, vehicleMake, vehicleModel, vehicleColor, licensePlate]
+      properties:
+        id: { type: string }
+        profileId: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string }
+        phone: { type: ["string", "null"] }
+        avatarUrl: { type: ["string", "null"] }
+        accountStatus: { type: string }
+        approvalStatus: { type: string, enum: [pending, approved, rejected, suspended] }
+        availabilityStatus: { type: string }
+        rating: { type: number }
+        totalDeliveries: { type: number }
+        vehicleType: { type: ["string", "null"] }
+        vehicleMake: { type: ["string", "null"] }
+        vehicleModel: { type: ["string", "null"] }
+        vehicleColor: { type: ["string", "null"] }
+        vehicleYear: { type: ["number", "null"] }
+        licensePlate: { type: ["string", "null"] }
+    AdminDriverReviewApplication:
+      type: object
+      required: [licenseState, licenseLastFour, insuranceProvider, insuranceExpiresAt, backgroundCheckStatus, backgroundCheckedAt, backgroundCheckReason, backgroundCheckReference, mvrCheckStatus, mvrCheckedAt, mvrCheckReason, mvrCheckReference, submittedAt]
+      properties:
+        licenseState: { type: ["string", "null"] }
+        licenseLastFour: { type: ["string", "null"] }
+        insuranceProvider: { type: ["string", "null"] }
+        insuranceExpiresAt: { type: ["string", "null"], format: date-time }
+        backgroundCheckStatus: { type: string, enum: [not_started, pending, clear, review] }
+        backgroundCheckedAt: { type: ["string", "null"], format: date-time }
+        backgroundCheckReason: { type: ["string", "null"] }
+        backgroundCheckReference: { type: ["string", "null"] }
+        mvrCheckStatus: { type: string, enum: [not_started, pending, clear, review] }
+        mvrCheckedAt: { type: ["string", "null"], format: date-time }
+        mvrCheckReason: { type: ["string", "null"] }
+        mvrCheckReference: { type: ["string", "null"] }
+        submittedAt: { type: ["string", "null"], format: date-time }
+    AdminDriverReviewDocument:
+      type: object
+      required: [id, documentType, verificationStatus, expiryDate, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        documentType: { type: string, enum: [driver_photo, license, insurance, vehicle_registration] }
+        verificationStatus: { type: string, enum: [pending, approved, rejected] }
+        expiryDate: { type: ["string", "null"], format: date }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AdminDriverReviewIncident:
+      type: object
+      required: [id, driverId, deliveryId, category, message, status, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        driverId: { type: string }
+        deliveryId: { type: ["string", "null"] }
+        category: { type: string }
+        message: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AdminDriverReviewRating:
+      type: object
+      required: [id, deliveryId, customerId, driverId, score, comment, createdAt]
+      properties:
+        id: { type: string }
+        deliveryId: { type: string }
+        customerId: { type: string }
+        driverId: { type: ["string", "null"] }
+        score: { type: string }
+        comment: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    AdminDriverReviewEarning:
+      type: object
+      required: [id, driverId, deliveryId, grossAmount, adjustmentAmount, netAmount, status, paidAt, createdAt]
+      properties:
+        id: { type: string }
+        driverId: { type: string }
+        deliveryId: { type: string }
+        grossAmount: { type: number }
+        adjustmentAmount: { type: number }
+        netAmount: { type: number }
+        status: { type: string }
+        paidAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    AdminDriverReviewDelivery:
+      type: object
+      required: [id, orderNumber, status, createdAt]
+      properties:
+        id: { type: string }
+        orderNumber: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdminDriverReview:
+      type: object
+      required: [driver, application, documents, incidents, ratings, earnings, deliveries, complianceReviewStatus, pendingProfileChanges, pendingProfileSubmittedAt, complianceReviewReason]
+      properties:
+        driver: { $ref: "#/components/schemas/AdminDriverReviewDriver" }
+        application:
+          anyOf:
+            - $ref: "#/components/schemas/AdminDriverReviewApplication"
+            - type: "null"
+        complianceReviewStatus: { type: string, enum: [none, pending, approved, rejected] }
+        pendingProfileChanges:
+          anyOf:
+            - $ref: "#/components/schemas/PendingDriverProfileChanges"
+            - type: "null"
+        pendingProfileSubmittedAt: { type: ["string", "null"], format: date-time }
+        complianceReviewReason: { type: ["string", "null"] }
+        documents:
+          type: array
+          items: { $ref: "#/components/schemas/AdminDriverReviewDocument" }
+        incidents:
+          type: array
+          items: { $ref: "#/components/schemas/AdminDriverReviewIncident" }
+        ratings:
+          type: array
+          items: { $ref: "#/components/schemas/AdminDriverReviewRating" }
+        earnings:
+          type: array
+          items: { $ref: "#/components/schemas/AdminDriverReviewEarning" }
+        deliveries:
+          type: array
+          items: { $ref: "#/components/schemas/AdminDriverReviewDelivery" }
+    AdminDocumentReviewInput:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approved, rejected] }
+        reason: { type: string, minLength: 3, maxLength: 500 }
+    AdminRefundInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 3, maxLength: 500 }
+    AdminSupportTicketUpdateInput:
+      type: object
+      properties:
+        status: { type: string, enum: [open, in_progress, resolved] }
+        source: { type: string, enum: [customer_ticket, driver_issue], description: Optional; defaults to customer_ticket for backwards-compatible ticket IDs. }
+        priority: { type: string, enum: [low, normal, high, urgent] }
+        assignedProfileId: { type: [string, "null"], description: Omit to leave unchanged; null unassigns. }
+        resolution: { type: string, minLength: 1, maxLength: 2000, description: Required when status is resolved. Omit it when reopening; reopening clears it internally. }
+    AdminSupportTicketCommentInput:
+      type: object
+      required: [source, body]
+      properties:
+        source: { type: string, enum: [customer_ticket, driver_issue] }
+        body: { type: string, minLength: 2, maxLength: 2000 }
+        clientRequestId: { type: string, maxLength: 120 }
+    AdminSupportConversationAuthor:
+      type: object
+      required: [role, name]
+      properties:
+        role: { type: string }
+        name: { type: string }
+    AdminSupportConversationEntry:
+      type: object
+      required: [id, source, body, createdAt, author, origin]
+      properties:
+        id: { type: string }
+        source: { type: string, enum: [customer_ticket, driver_issue] }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        author: { $ref: "#/components/schemas/AdminSupportConversationAuthor" }
+        origin: { type: boolean }
+    AdminSupportConversationReply:
+      type: object
+      required: [id, source, body, createdAt, idempotent]
+      properties:
+        id: { type: string }
+        source: { type: string, enum: [customer_ticket, driver_issue] }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        idempotent: { type: boolean }
+    RequesterSupportConversationAuthor:
+      type: object
+      required: [role, name]
+      properties:
+        role: { type: string, enum: [requester, staff] }
+        name: { type: string }
+    RequesterSupportConversationEntry:
+      type: object
+      required: [id, body, createdAt, author, origin]
+      properties:
+        id: { type: string }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        author: { $ref: "#/components/schemas/RequesterSupportConversationAuthor" }
+        origin: { type: boolean }
+    RequesterSupportConversationReplyInput:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, minLength: 2, maxLength: 2000 }
+        clientRequestId: { type: string, minLength: 1, maxLength: 120 }
+    RequesterSupportConversationReply:
+      type: object
+      required: [id, body, createdAt, idempotent]
+      properties:
+        id: { type: string }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        idempotent: { type: boolean }
+    GeneralSettings:
+      type: object
+      required: [businessName, appName, tagline, businessEmail, supportEmail, supportPhone, businessAddress, website, defaultCurrency, country, timeZone, dateFormat, distanceUnit, updatedByProfileId, createdAt, updatedAt]
+      properties:
+        businessName: { type: string }
+        appName: { type: string }
+        tagline: { type: string }
+        businessEmail: { type: string, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$' }
+        supportEmail: { type: string, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$' }
+        supportPhone: { type: string }
+        businessAddress: { type: string }
+        website: { type: string }
+        defaultCurrency: { type: string, pattern: "^[A-Z]{3}$" }
+        country: { type: string, pattern: "^[A-Z]{2}$" }
+        timeZone: { type: string }
+        dateFormat: { type: string, enum: [MM/dd/yyyy, dd/MM/yyyy, yyyy-MM-dd] }
+        distanceUnit: { type: string, enum: [mi, km] }
+        updatedByProfileId: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    GeneralSettingsInput:
+      type: object
+      required: [businessName, appName, tagline, businessEmail, supportEmail, supportPhone, businessAddress, website, defaultCurrency, country, timeZone, dateFormat, distanceUnit]
+      additionalProperties: false
+      properties:
+        businessName: { type: string, minLength: 1, maxLength: 160 }
+        appName: { type: string, minLength: 1, maxLength: 160 }
+        tagline: { type: string, maxLength: 300 }
+        businessEmail: { type: string, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$', maxLength: 320 }
+        supportEmail: { type: string, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$', maxLength: 320 }
+        supportPhone: { type: string, maxLength: 40 }
+        businessAddress: { type: string, maxLength: 500 }
+        website: { type: string, pattern: '^https?://.+', maxLength: 2048 }
+        defaultCurrency: { type: string, pattern: "^[A-Z]{3}$" }
+        country: { type: string, pattern: "^[A-Z]{2}$" }
+        timeZone: { type: string, minLength: 1, maxLength: 100 }
+        dateFormat: { type: string, enum: [MM/dd/yyyy, dd/MM/yyyy, yyyy-MM-dd] }
+        distanceUnit: { type: string, enum: [mi, km] }
+    IntegrationStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [configured, notConfigured, connected] }
+    DispatchExpansionStage:
+      type: object
+      required: [radiusMiles, durationSeconds]
+      additionalProperties: false
+      properties:
+        radiusMiles: { type: number, minimum: 1, maximum: 100 }
+        durationSeconds: { type: number, minimum: 1, maximum: 3600 }
+    DispatchSettings:
+      type: object
+      required: [initialRadiusMiles, maximumRadiusMiles, initialDurationSeconds, expansionStages, maximumPickupEtaMinutes, totalExpirationSeconds, updatedAt]
+      properties:
+        initialRadiusMiles: { type: number, minimum: 1, maximum: 100 }
+        maximumRadiusMiles: { type: number, minimum: 1, maximum: 100 }
+        initialDurationSeconds: { type: number, minimum: 1, maximum: 3600 }
+        expansionStages:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items: { $ref: "#/components/schemas/DispatchExpansionStage" }
+        maximumPickupEtaMinutes: { type: number, minimum: 1, maximum: 120 }
+        totalExpirationSeconds: { type: number, minimum: 60, maximum: 3600 }
+        updatedAt: { type: string, format: date-time }
+    DispatchSettingsInput:
+      type: object
+      required: [initialRadiusMiles, maximumRadiusMiles, initialDurationSeconds, expansionStages, maximumPickupEtaMinutes, totalExpirationSeconds]
+      additionalProperties: false
+      properties:
+        initialRadiusMiles: { type: number, minimum: 1, maximum: 100 }
+        maximumRadiusMiles: { type: number, minimum: 1, maximum: 100 }
+        initialDurationSeconds: { type: number, minimum: 1, maximum: 3600 }
+        expansionStages:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items: { $ref: "#/components/schemas/DispatchExpansionStage" }
+        maximumPickupEtaMinutes: { type: number, minimum: 1, maximum: 120 }
+        totalExpirationSeconds: { type: number, minimum: 60, maximum: 3600 }
+    AdminSettings:
+      type: object
+      required: [general, dispatch, connections, system, capabilities]
+      properties:
+        general: { $ref: "#/components/schemas/GeneralSettings" }
+        dispatch: { $ref: "#/components/schemas/DispatchSettings" }
+        connections:
+          type: object
+          required: [stripe, maps, email, documentStorage]
+          properties:
+            stripe: { $ref: "#/components/schemas/IntegrationStatus" }
+            maps: { $ref: "#/components/schemas/IntegrationStatus" }
+            email: { $ref: "#/components/schemas/IntegrationStatus" }
+            documentStorage: { $ref: "#/components/schemas/IntegrationStatus" }
+        system:
+          type: object
+          required: [api, database, server]
+          properties:
+            api: { $ref: "#/components/schemas/IntegrationStatus" }
+            database: { $ref: "#/components/schemas/IntegrationStatus" }
+            server: { $ref: "#/components/schemas/IntegrationStatus" }
+        capabilities:
+          type: object
+          required: [superAdmin]
+          properties:
+            superAdmin: { type: string, enum: [notConfigured] }
+    AdminSettingsUser:
+      type: object
+      required: [id, name, email, role, status, lastLogin, activeSessionCount, capabilities]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$' }
+        role: { type: string, enum: [admin, dispatcher, support] }
+        status: { type: string, enum: [active, disabled] }
+        lastLogin: { type: ["string", "null"], format: date-time }
+        activeSessionCount: { type: number, minimum: 0 }
+        capabilities:
+          type: object
+          required: [superAdmin]
+          properties:
+            superAdmin: { type: string, enum: [notConfigured] }
+    AdminSettingsUserUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        role: { type: string, enum: [admin, dispatcher, support] }
+        status: { type: string, enum: [active, disabled] }
+    SessionRevocation:
+      type: object
+      required: [revokedSessionCount]
+      properties:
+        revokedSessionCount: { type: number, minimum: 0 }
+    SecuritySettingsInput:
+      type: object
+      additionalProperties: false
+      required: [sessionTimeoutMinutes, suspiciousLoginAlerts]
+      properties:
+        sessionTimeoutMinutes: { type: number, minimum: 15, maximum: 1440 }
+        suspiciousLoginAlerts: { type: boolean }
+    SecuritySettings:
+      allOf:
+        - $ref: "#/components/schemas/SecuritySettingsInput"
+        - type: object
+          required: [updatedAt]
+          properties: { updatedAt: { type: string, format: date-time } }
+    PaymentFeeSettingsInput:
+      type: object
+      additionalProperties: false
+      required: [currency, customerServiceFeeCents, deliveryFeeCents, smallOrderThresholdCents, smallOrderFeeCents, taxRateBasisPoints, refundWindowDays]
+      properties:
+        currency: { type: string, enum: [USD] }
+        customerServiceFeeCents: { type: number, minimum: 0, maximum: 100000 }
+        deliveryFeeCents: { type: number, minimum: 0, maximum: 100000 }
+        smallOrderThresholdCents: { type: number, minimum: 0, maximum: 1000000 }
+        smallOrderFeeCents: { type: number, minimum: 0, maximum: 100000 }
+        taxRateBasisPoints: { type: number, minimum: 0, maximum: 10000 }
+        refundWindowDays: { type: number, minimum: 0, maximum: 365 }
+    PaymentFeeSettings:
+      allOf:
+        - $ref: "#/components/schemas/PaymentFeeSettingsInput"
+        - type: object
+          required: [appliedToCheckout, updatedAt]
+          properties: { appliedToCheckout: { type: boolean, enum: [true] }, updatedAt: { type: string, format: date-time } }
+    EmailSettingsInput:
+      type: object
+      additionalProperties: false
+      required: [senderDisplayName, replyToEmail, supportEmail, welcomeEnabled, passwordResetEnabled, orderConfirmationEnabled, orderDeliveredEnabled]
+      properties:
+        senderDisplayName: { type: string, minLength: 1, maxLength: 120 }
+        replyToEmail: { type: ["string", "null"], pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$', maxLength: 320 }
+        supportEmail: { type: ["string", "null"], pattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$', maxLength: 320 }
+        welcomeEnabled: { type: boolean }
+        passwordResetEnabled: { type: boolean }
+        orderConfirmationEnabled: { type: boolean }
+        orderDeliveredEnabled: { type: boolean }
+    EmailSettings:
+      allOf:
+        - $ref: "#/components/schemas/EmailSettingsInput"
+        - type: object
+          required: [updatedAt]
+          properties: { updatedAt: { type: string, format: date-time } }
+    PromotionInput:
+      type: object
+      additionalProperties: false
+      required: [code, discountType, discountValue, startsAt, expiresAt, maxRedemptions, description]
+      properties:
+        code: { type: string, minLength: 3, maxLength: 40, pattern: '^[A-Za-z0-9_-]+$' }
+        description: { type: ["string", "null"], maxLength: 300 }
+        discountType: { type: string, enum: [percent, fixed] }
+        discountValue: { type: number, exclusiveMinimum: 0, maximum: 100000 }
+        startsAt: { type: ["string", "null"], format: date-time }
+        expiresAt: { type: ["string", "null"], format: date-time }
+        maxRedemptions: { type: ["number", "null"], minimum: 1, maximum: 1000000 }
+    PromotionStatusInput:
+      type: object
+      additionalProperties: false
+      required: [active]
+      properties: { active: { type: boolean } }
+    Promotion:
+      allOf:
+        - $ref: "#/components/schemas/PromotionInput"
+        - type: object
+          required: [id, active, redemptionCount, createdAt, updatedAt]
+          properties:
+            id: { type: string }
+            active: { type: boolean }
+            redemptionCount: { type: number, minimum: 0 }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    IntegrationHealth:
+      type: object
+      required: [api, database, storage, googleMaps, stripe, resend]
+      properties:
+        api: { $ref: "#/components/schemas/HealthIntegration" }
+        database: { $ref: "#/components/schemas/HealthIntegration" }
+        storage: { $ref: "#/components/schemas/HealthIntegration" }
+        googleMaps: { $ref: "#/components/schemas/HealthIntegration" }
+        stripe: { $ref: "#/components/schemas/HealthIntegration" }
+        resend: { $ref: "#/components/schemas/HealthIntegration" }
+    HealthIntegration:
+      type: object
+      required: [configured, healthy, lastCheckedAt]
+      properties:
+        configured: { type: boolean }
+        healthy: { type: boolean }
+        lastCheckedAt: { type: string, format: date-time }
+    SystemStatus:
+      type: object
+      required: [api, database, uptimeSeconds, checkedAt]
+      properties:
+        api: { type: string, enum: [healthy, unavailable] }
+        database: { type: string, enum: [healthy, unavailable] }
+        uptimeSeconds: { type: number, minimum: 0 }
+        checkedAt: { type: string, format: date-time }

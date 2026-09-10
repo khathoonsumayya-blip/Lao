@@ -1,0 +1,193 @@
+Perform a COMPLETE FINAL QA of the Driver App. Do not modify the authentication architecture, recipient-verification security model, or working functionality unless a real defect is found.
+
+Test the application end-to-end using real browser interaction.
+
+1. Authentication
+
+Test:
+
+* Logged-out user visiting every Driver route
+* Driver login
+* Invalid credentials
+* Successful Driver login
+* Refresh after login
+* Closing/reopening the browser
+* Logout
+* Back/forward navigation after logout
+* Customer session attempting Driver routes
+* Admin session attempting Driver routes
+* Confirm unauthorized users are redirected cleanly
+* Confirm there is NO authentication/profile request loop
+
+2. Driver routes
+
+Test every Driver page individually:
+
+* /driver/welcome
+* /driver/onboarding
+* Driver Home/Dashboard
+* Available Deliveries
+* Active Delivery
+* Pickup workflow
+* Recipient Verification
+* Delivery Completion
+* Driver History
+* Driver Earnings
+* Driver Profile
+* Driver Settings
+* Logout
+
+For every page verify:
+
+* Loads successfully
+* No infinite spinner
+* No blank screen
+* No React/Vite runtime error
+* No console errors caused by the application
+* Buttons work
+* Forms accept input
+* Navigation works
+* Back navigation works
+* Refresh works
+* Empty states work
+* Loading states work
+* Error states work
+* No content is unreachable
+
+3. Delivery lifecycle
+
+Create/use a controlled QA delivery and verify:
+
+Customer creates delivery
+→ Driver sees available delivery
+→ Driver accepts
+→ Driver sees active delivery
+→ Pickup can be completed
+→ Driver requests recipient verification
+→ Customer sees the six-digit verification code
+→ Driver cannot access the Customer-only code endpoint
+→ Driver enters the actual code
+→ Delivery completes
+→ Delivery disappears from active work
+→ Delivery appears in Driver History
+→ Correct earnings appear in Driver Earnings.
+
+Verify that an incorrect code:
+
+* Does not complete the delivery
+* Counts toward the attempt limit
+* Eventually locks according to the existing rules
+
+Verify expired verification codes cannot complete a delivery.
+
+4. Security / isolation
+
+Explicitly verify:
+
+* Driver cannot retrieve Customer-only verification data
+* Customer cannot access Driver-only APIs
+* Customer cannot access Driver pages
+* Admin cannot accidentally inherit Customer/Driver session state
+* Logging out of one role does not incorrectly authenticate another role
+* Refresh does not change the authenticated role
+* No verification code appears in:
+    * Driver API responses
+    * Driver UI before Customer provides it
+    * browser-visible logs
+    * server logs
+    * events
+    * notifications
+    * network responses accessible to Driver
+
+5. Mobile QA
+
+Test at:
+
+iPhone:
+390 × 844
+
+iPad:
+820 × 1180
+
+Check every Driver page for:
+
+* Horizontal scrolling
+* Clipped buttons
+* Text overflow
+* Overlapping controls
+* Hidden navigation
+* Bottom navigation covering content
+* Keyboard covering inputs
+* Modal/drawer overflow
+* Unreachable buttons
+* Incorrect spacing
+* Poor contrast
+* Touch targets that are too small
+
+6. Driver financial verification
+
+Verify:
+
+* Completed delivery appears in History
+* Earnings record is created
+* Correct amount is displayed
+* Today’s Total updates correctly
+* Earnings remain after refresh
+* Earnings remain associated with the correct Driver
+
+7. Regression checks
+
+Run:
+
+* Driver typecheck
+* Customer typecheck
+* Admin typecheck
+* Production build
+* API tests
+* Generated API contract validation
+* git diff –check
+
+Do NOT modify working code merely to improve architecture or style.
+
+8. Final result
+
+Produce a QA report with this exact structure:
+
+DRIVER APP FINAL QA
+
+Authentication: PASS/FAIL
+Onboarding: PASS/FAIL
+Home/Dashboard: PASS/FAIL
+Available Deliveries: PASS/FAIL
+Active Delivery: PASS/FAIL
+Pickup: PASS/FAIL
+Recipient Verification: PASS/FAIL
+Delivery Completion: PASS/FAIL
+History: PASS/FAIL
+Earnings: PASS/FAIL
+Profile: PASS/FAIL
+Settings: PASS/FAIL
+Logout: PASS/FAIL
+Customer/Driver Isolation: PASS/FAIL
+Admin/Driver Isolation: PASS/FAIL
+Security: PASS/FAIL
+iPhone 390×844: PASS/FAIL
+iPad 820×1180: PASS/FAIL
+API Tests: PASS/FAIL
+Typechecks: PASS/FAIL
+Production Builds: PASS/FAIL
+git diff –check: PASS/FAIL
+
+For every FAIL, provide:
+
+1. Exact page
+2. Exact reproduction steps
+3. Expected behavior
+4. Actual behavior
+5. Console/API error
+6. Root cause
+7. Minimal recommended fix
+
+Do not declare the Driver App fully passed unless the actual browser workflow has been exercised.
+Do not create or leave permanent QA accounts, deliveries, verification records, sessions, or earnings.
+Clean up all temporary QA data after testing.

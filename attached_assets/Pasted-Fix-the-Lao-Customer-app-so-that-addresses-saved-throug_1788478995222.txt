@@ -1,0 +1,48 @@
+Fix the Lao Customer app so that addresses saved through Add Address / Saved Addresses can be directly selected and used in both the Pickup Address and Drop-off Address fields.
+
+Required behavior
+
+1. Pickup Address
+    * Add a clearly visible “Saved Addresses” / saved-location button or link next to or below the Pickup Address field.
+    * When tapped, show the customer’s saved addresses.
+    * Display each saved address with its label (Home, Work, etc.) and full address.
+    * When the customer selects one, populate the Pickup Address field immediately.
+    * Also populate the complete structured location data, including address components and latitude/longitude.
+    * The selected saved address must be used by the map, routing, pricing, and order creation—not just displayed as text.
+2. Drop-off Address
+    * Implement the exact same saved-address selection behavior for Drop-off Address.
+    * Selecting a saved address must populate the Drop-off location object, including latitude/longitude.
+3. Pickup and Drop-off must be independent
+    * Selecting a saved address for Pickup must not overwrite Drop-off.
+    * Selecting a saved address for Drop-off must not overwrite Pickup.
+    * The same saved address may be selected for either field.
+4. Keep normal address search
+    * Users must still be able to type a new address.
+    * Existing address autocomplete must continue working.
+    * Saved-address selection and autocomplete must coexist without interfering with each other.
+5. Saved address data
+    * Reuse the existing saved-address records from the customer’s Add Address page.
+    * Do NOT create duplicate address records.
+    * Do NOT create a second address-storage system.
+    * Use the existing authenticated customer’s saved addresses.
+6. No saved addresses
+    * If the customer has no saved addresses, show an appropriate empty state such as:
+        “No saved addresses yet”
+        with an “Add Address” action.
+7. Mobile/iPad UX
+    * Make the saved-address selector easy to tap on iPhone and iPad.
+    * Do not use React-controlled input behavior that could interfere with iOS/iPadOS typing.
+    * Make the saved-address list appear above/inside the normal address-entry flow with proper z-index and touch handling.
+8. Order submission
+    * Verify that selecting a saved Pickup or Drop-off address sends the correct structured address and coordinates to the backend when creating the delivery order.
+    * Do not rely only on the visible address string.
+
+Important
+
+First inspect the existing Add Address/Saved Addresses implementation and the existing Pickup/Drop-off implementation. Reuse the existing database/API/schema/components wherever possible.
+
+Do not redesign unrelated parts of the Customer app.
+
+After implementing, test this complete flow:
+
+Add Address → save Home → open delivery/order screen → select Home as Pickup → verify Pickup is populated → select another saved address as Drop-off → verify both remain correct → submit/test order payload → verify correct pickup and drop-off coordinates are sent.

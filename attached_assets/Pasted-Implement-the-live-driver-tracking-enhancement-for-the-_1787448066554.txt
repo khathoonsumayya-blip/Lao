@@ -1,0 +1,206 @@
+Implement the live driver tracking enhancement for the Anything Anywhere delivery platform.
+
+Important: Do not replace, rewrite, or regress the Google Maps booking implementation that is already working. Preserve all existing verified address search, geocoding, server-side Directions routing, quote calculation, map rendering, Stripe checkout flow, authentication, Supabase integration, and current SSE delivery updates.
+
+Goal
+
+When a delivery is active, the customer should be able to open the Tracking page and see the assigned driver’s real live GPS position moving on the Google Map.
+
+Use the existing authenticated driver-location publishing and SSE/realtime infrastructure wherever possible. Extend it safely instead of creating a second competing tracking system.
+
+Driver App requirements
+
+* When a driver has accepted an active delivery, request location permission clearly and only when needed.
+* Start publishing the driver’s real GPS coordinates for that active delivery.
+* Update location at a sensible interval and/or meaningful movement threshold so tracking feels live without excessive battery or API usage.
+* Send:
+    * latitude
+    * longitude
+    * timestamp
+    * delivery ID
+    * driver ID from the authenticated session
+    * optional heading/speed/accuracy if already available
+* Never accept a client-supplied driver ID as trusted identity; derive identity from the authenticated session.
+* Only the assigned driver may publish location for that delivery.
+* Stop publishing when:
+    * delivery is completed
+    * delivery is cancelled
+    * driver is no longer assigned
+    * tracking permission is removed
+    * driver logs out
+* Do not generate fake coordinates or simulation data in production.
+
+Customer Tracking page requirements
+
+Show a clean Google Map containing:
+
+* Pickup marker
+* Destination marker
+* Live driver marker
+* Current route
+* Delivery status
+* Updated ETA when available
+* A small “Updated just now / X sec ago” indicator
+
+The driver marker should move smoothly between received GPS updates instead of visibly jumping.
+
+Keep the customer-adjusted map viewport stable. Do not automatically re-fit or recenter the map on every driver-location update.
+
+Provide an optional recenter/follow driver control so the customer can return to the driver’s current location.
+
+Realtime behavior
+
+Use the existing authenticated SSE/realtime delivery stream if it already supports driver location.
+
+If changes are needed:
+
+* add driver-location events to the existing stream
+* scope every event to the authenticated delivery/customer
+* prevent customers from subscribing to deliveries they do not own
+* prevent drivers from publishing to deliveries they are not assigned to
+* do not expose unrelated driver or customer location data
+
+Avoid aggressive polling if SSE/realtime already exists.
+
+Route and ETA updates
+
+Preserve the current server-only Google Directions architecture.
+
+Do not call Google Directions from the browser.
+
+If the driver moves significantly, the server may refresh the remaining driving route and ETA using the existing Google server integration.
+
+Do not request a new Directions route for every GPS update. Add throttling/debouncing or a meaningful distance/time threshold to prevent unnecessary Google API usage.
+
+The browser should receive only the safe route result/polyline and metadata required for rendering.
+
+Security requirements
+
+Preserve the current key separation:
+
+* GOOGLE_MAPS_SERVER_API_KEY — server only
+* EXPO_PUBLIC_GOOGLE_MAPS_WEB_KEY — browser rendering only
+
+Never expose the server API key to Customer or Driver browser bundles.
+
+Enforce authorization server-side for:
+
+* location publishing
+* location reading
+* realtime subscriptions
+* delivery access
+
+Do not rely only on hidden UI controls for security.
+
+Privacy requirements
+
+Driver live GPS should only be visible to the customer associated with the active delivery and authorized operational/admin users.
+
+Do not expose a driver’s location before the delivery becomes trackable or after the delivery ends.
+
+Do not permanently store high-frequency location history unless the existing product architecture explicitly requires it. Prefer only the latest location or a limited retention strategy.
+
+Failure states
+
+The tracking page must remain usable when live location is temporarily unavailable.
+
+Show simple messages such as:
+
+* “Waiting for driver location”
+* “Driver location temporarily unavailable”
+* “Reconnecting to live tracking”
+
+Never show:
+
+* invented coordinates
+* estimated fake driver movement
+* sample pins
+* straight-line route fallback presented as real navigation
+
+If the realtime connection drops, automatically reconnect safely.
+
+UI requirements
+
+Keep the interface minimal and customer-friendly.
+
+Do not add large paragraphs of explanatory text.
+
+On mobile, prioritize:
+
+* map
+* driver status
+* ETA
+* delivery progress
+* one clear recenter/follow control
+
+Ensure the tracking page works correctly at:
+
+* iPhone width around 390px
+* Android width around 412px
+* desktop
+
+No horizontal scrolling, overlapping controls, or clipped map content.
+
+Preserve existing functionality
+
+Do not break or redesign:
+
+* Google address autocomplete
+* verified coordinates
+* server-side geocoding
+* Google Directions integration
+* booking preview map
+* quote calculation
+* Stripe checkout
+* Customer authentication
+* Driver authentication
+* Admin functionality
+* saved addresses
+* prohibited-items confirmation
+* current customer navigation
+* existing API contracts unless extension is necessary
+
+Prefer additive changes over rewrites.
+
+Validation required before marking complete
+
+Run and report:
+
+1. API typecheck
+2. Customer typecheck
+3. Driver typecheck
+4. Customer production build
+5. Driver production build
+6. Existing API integration tests
+7. Any new live-tracking tests
+
+Also verify manually:
+
+* Driver accepts a delivery
+* Driver grants location permission
+* Real driver position begins publishing
+* Customer tracking page receives the location
+* Driver marker appears at the correct location
+* Marker updates while driver moves
+* Customer can manually pan/zoom without the map constantly snapping back
+* Follow/recenter control works
+* Unauthorized customer cannot access another delivery’s location
+* Unauthorized driver cannot publish to another delivery
+* Tracking stops after completion/cancellation
+* Temporary SSE disconnect reconnects successfully
+* No Google Maps REQUEST_DENIED
+* No fake/sample coordinates appear
+* No server Google API key appears in browser/network bundles
+* iPhone 390px layout works
+* Android 412px layout works
+* Desktop layout works
+
+Completion rule
+
+Do not mark the task complete merely because the code compiles.
+
+Mark it complete only after a real end-to-end test confirms:
+
+Driver App GPS → authenticated backend → realtime/SSE → Customer Tracking page → moving driver marker on Google Maps.
+
+If an external configuration or permission blocks full verification, clearly state exactly what is blocking it and leave the task in the appropriate blocked state rather than claiming completion.

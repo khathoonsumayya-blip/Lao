@@ -1,0 +1,68 @@
+The Driver app is STILL stuck at:
+
+https://98003e0a-5b5f-4eab-a93b-da51a054e5db-00-8h9noluamrze.picard.replit.dev/driver/onboarding
+
+Do NOT make another cosmetic/UI change to the onboarding page.
+
+I need you to diagnose and FIX the actual runtime navigation/authentication lifecycle.
+
+Previously you identified a React Query mount/unmount loop:
+
+/driver/onboarding
+→ GET /api/driver/profile
+→ Customer session returns 403
+→ Driver guard redirects to /driver/welcome
+→ Welcome/Layout mount additional observers
+→ components remount/retry
+→ navigation/auth state loops and the app appears stuck.
+
+Verify whether that loop is STILL happening in the current code. Do not assume the previous fix actually solved it.
+
+Requirements:
+
+1. Start from a completely clean browser/session.
+2. Open /driver/onboarding directly.
+3. Inspect every network request made during the first 5–10 seconds.
+4. Inspect the browser console for errors/warnings.
+5. Trace every navigation between:
+    /driver/onboarding
+    /driver/welcome
+    /driver/login (if applicable)
+    /driver
+6. Identify whether /api/driver/profile is returning 401, 403, 404, 500, or repeatedly refetching.
+7. Identify which React component/query is causing the repeated mount/unmount or refetch cycle.
+8. Check React Query settings including enabled, retry, refetchOnMount, refetchOnWindowFocus, and query invalidation.
+9. Make sure the Driver authentication check has ONE authoritative source of truth.
+10. The Driver route guard must resolve authentication BEFORE protected Driver pages start their protected API queries.
+11. A Customer session must NEVER cause an infinite redirect/refetch loop.
+12. A logged-out user must receive one deterministic Driver login/welcome state.
+13. A logged-in Driver must proceed to onboarding/dashboard normally.
+14. Do not disable authentication or bypass the Driver guard just to make the screen appear.
+15. Do not use arbitrary timeouts, setInterval loops, forced reloads, or navigation hacks as the fix.
+16. Make sure Driver Layout, Welcome, and Onboarding do not independently perform competing authentication redirects.
+17. Protected Driver queries must not execute while Driver authentication is unresolved or when the session is known to be non-Driver.
+18. After fixing it, test these exact cases:
+
+A. Clean browser → /driver/onboarding
+B. Customer session → /driver/onboarding
+C. Logged-out session → /driver/onboarding
+D. Valid Driver session → /driver/onboarding
+E. Refresh onboarding
+F. Navigate onboarding → another Driver page → back to onboarding
+G. Logout → attempt /driver/onboarding
+
+For each case, verify there is no infinite request loop and no blank/loading/stuck screen.
+
+IMPORTANT:
+Do not tell me the issue is merely that the screenshot caught a loading frame. I have reproduced the problem repeatedly.
+
+Before saying it is fixed, provide:
+
+* exact root cause
+* exact files changed
+* exact logic changed
+* network behavior before vs after
+* confirmation that /driver/onboarding is actually reachable and usable in a clean browser
+* confirmation that the Customer session cannot trigger a Driver redirect loop.
+
+Do not stop after identifying the problem. Implement the complete fix and test it.

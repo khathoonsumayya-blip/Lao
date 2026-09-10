@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600;700&display=swap');
+
+.aa-admin-theme {
+  --background: 220 20% 97%;
+  --foreground: 222 47% 11%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  
+  --primary: 199 89% 48%; /* Calm Cyan */
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222 47% 11.2%;
+  
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222 47% 11.2%;
+  
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 199 89% 48%;
+
+  --admin-font-sans: 'Plus Jakarta Sans', sans-serif;
+  --admin-font-mono: 'Spline Sans Mono', monospace;
+
+  font-family: var(--admin-font-sans);
+  background:
+    radial-gradient(circle at 100% 0%, hsl(var(--primary) / .10), transparent 28rem),
+    hsl(var(--background));
+  color: hsl(var(--foreground));
+  min-height: 100dvh;
+}
+
+.dark .aa-admin-theme {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+  
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+  
+  --primary: 199 89% 48%;
+  --primary-foreground: 222 47% 11%;
+  
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 199 89% 48%;
+}
+
+.aa-admin-theme * {
+  border-color: hsl(var(--border));
+}
+
+.aa-admin-font-sans {
+  font-family: var(--admin-font-sans);
+}
+
+.aa-admin-font-mono {
+  font-family: var(--admin-font-mono);
+}
+
+.aa-admin-sidebar {
+  border-right: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+}
+
+.aa-admin-theme :focus-visible {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 3px;
+}
+
+.aa-admin-theme button,
+.aa-admin-theme a,
+.aa-admin-theme input,
+.aa-admin-theme select,
+.aa-admin-theme textarea {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.aa-admin-theme [data-state="loading"] {
+  background: linear-gradient(100deg, hsl(var(--secondary)) 25%, hsl(var(--card)) 45%, hsl(var(--secondary)) 65%);
+  background-size: 200% 100%;
+  animation: aa-admin-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes aa-admin-shimmer { to { background-position: -200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .aa-admin-theme *, .aa-admin-theme *::before, .aa-admin-theme *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+.aa-admin-nav-item {
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.aa-admin-nav-item:hover, .aa-admin-nav-item[aria-current="page"] {
+  color: hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.1);
+}

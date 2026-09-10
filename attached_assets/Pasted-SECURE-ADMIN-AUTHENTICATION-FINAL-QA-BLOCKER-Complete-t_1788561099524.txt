@@ -1,0 +1,146 @@
+SECURE ADMIN AUTHENTICATION — FINAL QA BLOCKER
+
+Complete the existing Secure Admin Authentication task and then run only the Admin ↔ Driver isolation test.
+
+Important constraints
+
+* Do NOT change the finalized Driver authentication architecture.
+* Do NOT modify Driver onboarding, Driver verification, delivery lifecycle, earnings, or Driver route guards unless absolutely required to preserve role isolation.
+* Do NOT weaken authorization checks.
+* Do NOT create an Admin account through a Driver route or elevate an existing Customer/Driver account.
+* Do NOT add a production backdoor, hardcoded credentials, bypass flag, demo login, or hidden Admin access.
+* Do NOT remove or loosen existing Customer/Driver isolation.
+* Keep production behavior secure.
+
+1. Complete Secure Admin Authentication
+
+Inspect the existing pending Secure Admin Authentication implementation/task and finish it using the application’s existing authentication architecture.
+
+Admin authentication must:
+
+* Require an authenticated Admin/staff session.
+* Verify the user’s actual authorized Admin/staff role server-side.
+* Reject Customer and Driver sessions from Admin-protected endpoints.
+* Never trust a client-side role value by itself.
+* Return appropriate 401/403 responses for unauthorized access.
+* Protect /admin/* routes and Admin APIs.
+* Preserve existing session/logout behavior.
+* Prevent an unauthenticated user from opening the Admin application as an authenticated Admin.
+* Do not auto-approve or auto-elevate users.
+
+2. Create a controlled NON-PRODUCTION QA Admin fixture
+
+Provide a safe QA-only way to establish an authorized Admin session for testing.
+
+Preferred approach:
+
+* Use the existing test/fixture/seeding mechanism if one already exists.
+* If a fixture does not exist, create a clearly isolated development/test-only Admin fixture.
+* It must only be available in non-production environments.
+* It must not create or elevate Admin users in production.
+* Do not expose credentials in the frontend.
+* Do not display credentials in application UI.
+* Do not create a generic backdoor such as ?admin=true.
+* Clearly document how the QA Admin session is established for this test.
+
+Use a disposable QA identity and ensure it can be completely removed during cleanup.
+
+3. Run ONLY this isolation test
+
+After Admin authentication is working, do not perform another full Driver QA.
+
+Test exactly these boundaries:
+
+A. Admin → Admin
+
+* Establish the authorized non-production QA Admin session.
+* Open /admin/.
+* Confirm Admin authentication succeeds.
+* Confirm the Admin application loads normally.
+* Refresh and confirm the authorized Admin session persists.
+
+B. Admin → Driver
+
+While authenticated as the QA Admin:
+
+* Attempt to access /driver/.
+* Attempt at least one protected /driver/* route.
+* Confirm the result matches the application’s intended role policy.
+* If Admin is NOT supposed to have Driver access, verify a clean 403/denial/redirect.
+* Do not change Driver authorization merely to make the test pass.
+
+C. Driver → Admin
+
+Establish a normal authenticated Driver session.
+
+* Attempt to access /admin/.
+* Attempt one protected Admin API endpoint.
+* Confirm access is denied with the correct 401/403 behavior.
+* Confirm the Driver session remains a valid Driver session and is NOT globally signed out.
+
+D. Customer → Admin
+
+Establish a normal authenticated Customer session.
+
+* Attempt to access /admin/.
+* Attempt one protected Admin API endpoint.
+* Confirm access is denied.
+* Confirm the Customer session remains a valid Customer session.
+
+E. Logged-out → Admin
+
+* Log out.
+* Open /admin/.
+* Confirm authentication is required.
+* Confirm no Admin UI becomes authenticated without credentials.
+
+4. Verify session isolation
+
+Specifically verify:
+
+* Admin session cannot be confused with Driver session.
+* Driver session cannot be confused with Admin session.
+* Customer session cannot be confused with Admin session.
+* Logout from one role does not accidentally authenticate another role.
+* Refresh does not change the user’s role.
+* Back/forward navigation does not bypass authorization.
+* Direct URL navigation cannot bypass authorization.
+
+5. Cleanup
+
+After testing, remove all temporary QA Admin data:
+
+* QA Admin user/fixture
+* QA sessions
+* Any temporary test records created for this isolation test
+
+Do NOT modify or delete existing production data.
+
+6. Final report
+
+Return a concise report containing:
+
+1. Exact Secure Admin Authentication changes made.
+2. How the non-production QA Admin fixture is isolated from production.
+3. Admin → Admin result.
+4. Admin → Driver result.
+5. Driver → Admin result.
+6. Customer → Admin result.
+7. Logged-out → Admin result.
+8. Session-isolation result.
+9. Any files changed.
+10. Any tests/typechecks/builds run.
+11. Confirmation that temporary QA data was removed.
+
+PASS CRITERIA
+
+The Admin authentication task is complete only if:
+
+* Unauthorized users cannot access Admin.
+* Customer and Driver cannot access protected Admin resources.
+* The authorized QA Admin can authenticate through the legitimate Admin authentication flow.
+* Admin/Driver sessions remain isolated.
+* No authentication bypass or privilege escalation was introduced.
+* The temporary QA Admin fixture is non-production only and is cleaned up afterward.
+
+Do not perform unrelated refactoring or additional Driver changes.

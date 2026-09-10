@@ -1,0 +1,160 @@
+Now build the completely separate Anything Anywhere Driver App, sharing the same backend.
+
+The Driver App should feel professional and easy to operate while driving.
+
+Never require complicated interaction while the vehicle is moving.
+
+Driver authentication/onboarding
+
+Screens:
+
+* Welcome
+* Create account
+* Phone/email verification
+* Personal information
+* Driver photo
+* Driver license information
+* Vehicle information
+* Insurance information
+* Required document upload
+* Background-check status placeholder/integration architecture
+* Application status
+
+Driver cannot accept deliveries until admin approval.
+
+Driver Home
+
+Large ONLINE/OFFLINE control.
+
+Show:
+
+Today’s earnings
+Completed deliveries
+Driver rating
+
+When online:
+“Looking for deliveries…”
+
+Delivery request
+
+When eligible delivery is offered, show:
+
+Approximate pickup area
+Approximate delivery area
+Pickup distance
+Delivery distance
+Expected time
+Package type
+Package size
+Care level
+Driver earnings
+
+Buttons:
+Accept
+Decline
+
+Add offer timeout.
+
+Prevent multiple drivers from accepting the same delivery.
+
+Acceptance must be atomic on the backend.
+
+After acceptance
+
+Show:
+Customer/pickup contact details permitted for the delivery
+Pickup address
+Package instructions
+Navigation button
+ETA
+
+Statuses:
+
+Heading to pickup
+Arrived at pickup
+Confirm pickup
+Picked up
+Start delivery
+Arrived at destination
+Verify recipient
+Complete delivery
+
+Each status change must update Customer and Admin immediately.
+
+Navigation
+
+Provide map and route.
+
+Buttons:
+Navigate
+Call
+Message
+Report issue
+
+Avoid exposing unnecessary customer personal data.
+
+Pickup verification
+
+Driver should confirm package details.
+
+Allow:
+
+* package photo when policy allows
+* pickup confirmation
+* issue reporting
+
+For higher-value packages create future signature/QR verification architecture.
+
+Delivery verification
+
+Recipient gives OTP.
+
+Driver enters OTP.
+
+Backend verifies.
+
+If correct:
+Complete delivery.
+
+If wrong:
+Show safe retry flow.
+
+Do not expose the correct OTP to the Driver App.
+
+Earnings
+
+Today
+This week
+This month
+
+Show:
+Delivery earnings
+Bonuses
+Adjustments
+Payout status
+
+Do not make tipping part of the business model.
+
+Driver profile
+
+Documents
+Vehicle
+Ratings
+Earnings
+Bank/payout account setup
+Support
+Safety
+Settings
+
+Safety
+
+Include:
+
+* Emergency/help button
+* Report unsafe delivery
+* Cancel/return package workflow
+* Support contact
+* Customer unavailable workflow
+* Package damaged workflow
+
+Do not allow a driver to arbitrarily mark an order delivered without verification.

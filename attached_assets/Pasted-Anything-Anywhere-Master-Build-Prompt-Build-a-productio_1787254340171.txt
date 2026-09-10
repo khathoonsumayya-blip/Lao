@@ -1,0 +1,700 @@
+Anything Anywhere — Master Build Prompt
+
+Build a production-quality delivery platform called Anything Anywhere.
+
+The product slogan is:
+
+Anything. Anywhere. Delivered.
+
+Secondary brand message:
+
+No Tips. Best Service.
+
+The initial launch market is Raleigh, North Carolina, USA, but the architecture must allow expansion to other US cities later.
+
+This is NOT a simple prototype. Build a working full-stack application with a shared backend and database that will eventually power THREE coordinated interfaces:
+
+1. Customer App
+2. Driver App
+3. Admin Dashboard
+
+For this first stage, build the complete shared backend architecture and the Customer App.
+
+TECHNOLOGY
+
+Use a modern architecture that works well on Replit.
+
+Preferred stack:
+
+* TypeScript
+* React Native + Expo for iPhone and Android
+* Expo Web support for browser
+* Node.js/TypeScript backend
+* PostgreSQL database using Replit Database
+* Replit Auth or a secure authentication solution supported by Replit
+* REST API or a clean typed API layer
+* WebSockets or another reliable real-time mechanism for delivery updates
+* Secure environment variables using Replit Secrets
+
+Do NOT hard-code API keys, passwords, payment secrets, database URLs, or private credentials.
+
+Structure the repository clearly so Customer, Driver, Admin and backend share models/types where appropriate.
+
+Suggested structure:
+
+/apps/customer
+/apps/driver
+/apps/admin
+/server
+/shared
+/database
+
+If a better monorepo structure is appropriate, use it.
+
+CRITICAL REQUIREMENT
+
+Customer App, Driver App and Admin Dashboard must all use the SAME backend, SAME order records and SAME source of truth.
+
+Do not create fake independent databases for each app.
+
+BRAND & DESIGN
+
+Create a professional, friendly delivery brand.
+
+Primary colors:
+
+* Deep blue
+* Bright delivery orange
+* White
+* Soft light-gray backgrounds
+* Green for successful/completed statuses
+* Red only for warnings/errors
+
+Style:
+
+* modern
+* clean
+* premium
+* friendly
+* simple enough for non-technical users
+* large touch targets
+* rounded cards
+* clear icons
+* readable fonts
+* minimal clutter
+
+Create reusable design components.
+
+Include our friendly delivery assistant/mascot Ari.
+
+Ari should appear selectively on:
+
+* onboarding
+* booking help
+* driver matched confirmation
+* delivery success
+* support/help screens
+
+Do not make Ari childish. Ari should feel friendly, trustworthy and modern.
+
+CUSTOMER APP
+
+Create a polished Customer App for iOS, Android and web.
+
+Splash Screen
+
+Show:
+
+Anything Anywhere
+
+Anything. Anywhere. Delivered.
+
+Then continue to onboarding.
+
+Onboarding
+
+Create 3 short onboarding screens:
+
+1. Send almost anything locally
+2. Track every delivery live
+3. No Tips. Best Service.
+
+Buttons:
+
+Get Started
+Sign In
+
+Authentication
+
+Support:
+
+* email signup/login
+* password reset
+* secure sessions
+* logout
+
+Prepare architecture for future:
+
+* Apple login
+* Google login
+* phone OTP
+
+Customer Home
+
+Header:
+
+Anything Anywhere
+
+Greeting such as:
+Good afternoon, Sarah
+
+Show Ari subtly.
+
+Main CTA:
+
+Send a Package
+
+Also display:
+
+Recent Orders
+Saved Places
+Saved Contacts
+Support
+
+Bottom navigation:
+
+Home
+Orders
+Wallet
+Profile
+
+BOOK DELIVERY FLOW
+
+Make the booking flow extremely simple.
+
+Step 1 — Pickup
+
+Fields:
+
+Pickup address
+
+Use address autocomplete when Google Maps API is connected.
+
+Pickup contact:
+
+* name
+* phone
+* relationship/role
+
+Options:
+Self
+Family
+Friend
+Business
+Store Employee
+Other
+
+Pickup instructions
+
+Example:
+Call me when you arrive.
+
+Allow saved contacts and saved addresses.
+
+Step 2 — Delivery
+
+Delivery address
+
+Recipient:
+
+* name
+* phone
+* relationship/role
+
+Delivery instructions.
+
+Allow saved contacts.
+
+Step 3 — Package
+
+Ask:
+
+What are you sending?
+
+Categories:
+
+Documents
+Food
+Groceries
+Medicine
+Gift
+Electronics
+Clothing
+Baby Items
+Pet Items
+Flowers
+Small Package
+Other
+
+Do NOT allow illegal, hazardous or prohibited goods.
+
+Show a prohibited-items notice.
+
+Package Size
+
+Small
+Medium
+Large
+
+Weight
+
+Under 5 lb
+5–20 lb
+20–50 lb
+
+Prevent unsupported packages above configured limits.
+
+Package Care
+
+Create four visually attractive selectable cards:
+
+🟢 Standard
+Everyday items
+
+🔵 Fragile
+Handle with extra care
+
+🟣 Priority
+Time-sensitive delivery
+
+🟠 Temperature Sensitive
+Special handling
+
+Allow:
+
+Special instructions
+
+Package Photo
+
+Allow customer to optionally upload/take a photo of the package.
+
+Store it securely.
+
+DELIVERY OPTIONS
+
+Offer:
+
+ASAP
+
+and
+
+Schedule for Later
+
+ASAP should prominently target fast local delivery where possible.
+
+Display estimated pickup and delivery time based on distance and availability.
+
+Do not promise 30 minutes when the system cannot realistically estimate it.
+
+PRICE QUOTE
+
+Calculate price on the SERVER.
+
+Never trust a total calculated only in the client.
+
+Price calculation should support:
+
+base fare
+distance
+package size
+package weight
+care level
+priority
+demand adjustment
+tax
+discount/promo code
+
+Show customers a clean breakdown.
+
+Example:
+
+Base delivery
+Distance
+Package care
+Tax
+Discount
+
+Then:
+
+Total
+
+Display:
+
+No tip required
+
+Do NOT include a tipping screen.
+
+Store pricing configuration in the database so Admin can change it without modifying application code.
+
+PAYMENT
+
+Prepare production payment architecture using Stripe.
+
+Support eventually:
+
+Credit/debit card
+Apple Pay
+Google Pay
+
+Do not expose Stripe secret keys in frontend code.
+
+Payments must be created/verified server-side.
+
+Use Stripe webhooks for final payment confirmation.
+
+Until Stripe credentials are added, provide a clearly labeled TEST PAYMENT MODE.
+
+Never disguise test payments as real payments.
+
+CREATE DELIVERY
+
+After payment success:
+
+Create a unique order.
+
+Example order number:
+
+AA-10482
+
+Use scalable IDs internally but provide a human-friendly order number.
+
+Order states:
+
+draft
+awaiting_payment
+paid
+searching_driver
+driver_assigned
+driver_arriving
+driver_at_pickup
+picked_up
+in_transit
+driver_at_dropoff
+delivered
+cancelled
+failed
+
+Every status transition must be recorded in an Order Events/Audit table.
+
+DRIVER MATCHING
+
+After payment:
+
+Customer sees:
+
+Ari is finding your driver…
+
+Backend should find eligible online drivers based on:
+
+* current availability
+* location
+* service zone
+* vehicle capability
+* package requirements
+* driver account status
+
+Do not permanently assign the first driver automatically without an acceptance process.
+
+Send delivery offer to candidate driver.
+
+If declined/timed out, offer to another qualified driver.
+
+When accepted:
+
+Customer immediately sees:
+
+Ari found your driver
+
+Driver card:
+Photo
+Name
+Rating
+Vehicle
+ETA
+
+Buttons:
+Call
+Message
+
+For privacy, architecture should allow masked phone communication later.
+
+LIVE TRACKING
+
+Create a tracking screen with map architecture ready for Google Maps.
+
+Display:
+
+Pickup
+Driver position
+Dropoff
+
+Timeline:
+
+Driver assigned
+Driver arriving
+Package picked up
+On the way
+Arriving
+Delivered
+
+Driver position must come from Driver App updates, NOT simulated client movement in production.
+
+Use real-time subscriptions/WebSocket architecture.
+
+SECURE DELIVERY OTP
+
+Generate a secure delivery code server-side.
+
+Recipient/customer can see or receive the code as appropriate.
+
+Driver must enter the correct code before completing delivery.
+
+Do not store plain OTP if avoidable; store an appropriately secured representation and enforce expiry/attempt limits.
+
+Admin should have an audited emergency override process.
+
+DELIVERY COMPLETION
+
+After successful delivery:
+
+Show:
+
+✓ Delivered successfully
+
+Delivery ID
+Recipient
+Delivery time
+Verification completed
+
+Then ask:
+
+How was your delivery?
+
+1–5 stars
+
+Optional feedback.
+
+Allow:
+Report a problem
+
+ORDERS
+
+Create sections:
+
+Active
+Past
+Cancelled
+
+Order detail includes:
+
+Order #
+Pickup
+Dropoff
+Package
+Driver
+Price
+Status
+Timeline
+Receipt
+Support
+
+Allow repeat delivery.
+
+WALLET/PAYMENTS
+
+Create:
+
+Payment Methods
+Receipts
+Promotional Credits
+
+Do not build an unregulated stored-value wallet unless appropriate regulatory requirements are met.
+
+PROFILE
+
+Customer profile:
+
+Name
+Phone
+Email
+Saved Addresses
+Saved Contacts
+Notifications
+Payment Methods
+Privacy
+Terms
+Help
+Logout
+
+NOTIFICATIONS
+
+Architecture must support:
+
+Driver assigned
+Driver arriving
+Package picked up
+Package on the way
+Driver arriving at recipient
+Delivered
+Cancelled/problem
+
+Use in-app notifications first and prepare Expo push notifications.
+
+SUPPORT
+
+Create:
+
+Help Center
+Report an Issue
+Contact Support
+
+Ticket categories:
+
+Driver issue
+Package issue
+Payment issue
+Late delivery
+Damaged item
+Missing item
+Other
+
+Create database-backed support tickets visible to Admin.
+
+DATABASE
+
+Create proper relational tables/models for at least:
+
+users
+customer_profiles
+driver_profiles
+driver_documents
+driver_locations
+driver_availability
+addresses
+contacts
+orders
+order_items/package_details
+order_events
+driver_offers
+payments
+payment_events
+ratings
+support_tickets
+notifications
+promo_codes
+pricing_rules
+service_zones
+admin_users
+audit_logs
+
+Use timestamps and appropriate foreign keys/indexes.
+
+Do not store secrets or raw payment card details.
+
+SECURITY
+
+Implement:
+
+authentication
+role-based permissions
+Customer/Driver/Admin roles
+server-side authorization
+input validation
+rate limiting where appropriate
+secure error handling
+environment secrets
+audit logging for sensitive admin actions
+
+A customer must never be able to fetch another customer’s private order.
+
+A driver must only receive the information required for deliveries they are authorized to handle.
+
+Admin permissions must be enforced server-side.
+
+ERROR HANDLING
+
+Every screen must handle:
+
+Loading
+Empty
+Success
+Error
+Offline/retry where practical
+
+Do not allow blank/black screens when an API fails.
+
+Show friendly messages.
+
+Example:
+
+“We couldn’t load your orders. Please try again.”
+
+TEST DATA
+
+Create development seed data:
+
+3 customers
+5 drivers
+10 deliveries
+
+Clearly mark them as test data.
+
+TESTING
+
+Before telling me the build is complete:
+
+Run the app.
+
+Fix all TypeScript errors.
+
+Fix all build errors.
+
+Test every navigation button.
+
+Test creating a customer account.
+
+Test login/logout.
+
+Test creating a delivery.
+
+Test quote calculation.
+
+Test order creation.
+
+Test order status updates.
+
+Test permissions.
+
+Test responsive layout.
+
+Test web build.
+
+Do not leave buttons that do nothing.
+
+Do not use fake success buttons for unfinished backend actions.
+
+If an integration needs an API key, create a graceful setup screen or development fallback and tell me exactly which Replit Secret is required.
+
+At the end, give me:
+
+1. What is working
+2. What still needs external credentials
+3. All required Replit Secrets
+4. Database schema summary
+5. How to preview on iPhone with Expo Go
+6. How to preview on Android
+7. How to preview on web
+8. How to deploy
+9. Any remaining production-safety issues
+
+Start building now.

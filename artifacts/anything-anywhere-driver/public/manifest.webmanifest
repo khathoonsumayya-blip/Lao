@@ -1,0 +1,13 @@
+{
+  "name": "Lao Driver",
+  "short_name": "Lao Driver",
+  "description": "The Lao workspace for delivery drivers.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14202a",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

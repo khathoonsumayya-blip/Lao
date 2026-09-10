@@ -1,0 +1,49 @@
+Replit Prompt — Add Customer Login & Sign-Up
+
+Add a complete authentication entry flow to the Anything Anywhere Customer App.
+
+Requirements:
+
+1. When the public Customer App opens, do not immediately show the delivery dashboard to an unauthenticated user.
+2. Create a clean, mobile-first welcome/authentication screen using the existing Anything Anywhere branding and Ari mascot.
+3. Add:
+    * Log In
+    * Create Account / Sign Up
+    * Forgot Password
+    * Email and password authentication
+    * Show/hide password
+    * Validation and friendly error messages
+    * Loading states
+    * Persistent authenticated session
+    * Logout option inside customer profile/settings
+4. If supported by the existing authentication provider, also add:
+    * Continue with Google
+    * Continue with Apple
+5. After successful login or registration, redirect the user to the Customer Home screen.
+6. If a logged-out user tries to access a protected customer page, redirect them to the Customer Login screen.
+7. Customer authentication must be completely separated by role from:
+    * Driver App
+    * Admin App
+8. A customer account must never receive Driver or Admin permissions.
+9. Do not expose Admin navigation, Admin Desk, driver controls, or backend management options anywhere in the Customer App.
+10. Keep the three products logically separated:
+    * Customer App → public customer-facing application
+    * Driver App → authenticated drivers only
+    * Admin App → restricted administrators only
+11. Preserve the existing delivery, realtime, database, API, maps, order, and payment functionality.
+12. Do not redesign unrelated working screens.
+
+After completing this task, verify these scenarios:
+
+* New customer can create an account.
+* Existing customer can log in.
+* Wrong password displays an error.
+* Forgot Password works.
+* Logged-in customer remains signed in after refresh.
+* Logout returns to the Customer Login screen.
+* Customer cannot access Driver routes.
+* Customer cannot access Admin routes.
+* Driver cannot access Admin routes without Admin authorization.
+* Admin App remains separate from the public Customer App.
+
+Do not only create the UI. Connect the authentication screens to the project’s real authentication system and verify the complete login/logout flow.

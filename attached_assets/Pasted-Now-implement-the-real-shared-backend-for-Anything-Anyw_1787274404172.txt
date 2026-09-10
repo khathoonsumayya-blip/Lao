@@ -1,0 +1,187 @@
+Now implement the real shared backend for Anything Anywhere\.
+
+Use Supabase/PostgreSQL\.
+
+Create appropriate tables including:
+
+### profiles
+
+- id
+- auth\_user\_id
+- role: customer / driver / admin / dispatcher / support
+- first\_name
+- last\_name
+- email
+- phone
+- avatar\_url
+- status
+- created\_at
+- updated\_at
+
+### customer\_addresses
+
+- id
+- customer\_id
+- label
+- full\_address
+- street
+- city
+- state
+- postal\_code
+- latitude
+- longitude
+- instructions
+- is\_default
+
+### contacts
+
+- id
+- customer\_id
+- name
+- phone
+- relationship
+- address\_id
+- instructions
+
+### drivers
+
+- id
+- profile\_id
+- onboarding\_status
+- availability\_status
+- approval\_status
+- vehicle\_type
+- vehicle\_make
+- vehicle\_model
+- vehicle\_color
+- license\_plate
+- rating
+- total\_deliveries
+- current\_latitude
+- current\_longitude
+- last\_location\_update
+
+### driver\_documents
+
+- id
+- driver\_id
+- document\_type
+- storage\_path
+- verification\_status
+- expiry\_date
+
+### deliveries
+
+Include:
+
+- id
+- public\_delivery\_id
+- customer\_id
+- driver\_id
+- pickup address/contact information
+- delivery address/contact information
+- pickup latitude/longitude
+- delivery latitude/longitude
+- package category
+- package description
+- weight category
+- size category
+- care level
+- special instructions
+- distance
+- estimated\_duration
+- base\_price
+- distance\_fee
+- care\_fee
+- service\_fee
+- tax
+- discount
+- total\_price
+- payment\_status
+- delivery\_status
+- scheduled\_at
+- assigned\_at
+- picked\_up\_at
+- delivered\_at
+- cancelled\_at
+- created\_at
+
+### delivery\_status\_history
+
+Store every status change\.
+
+### driver\_locations
+
+Store live/recent GPS positions related to an active delivery\.
+
+### payments
+
+Store Stripe IDs and safe transaction metadata\.
+Never store raw card numbers or CVC\.
+
+### ratings
+
+Customer rating of driver and delivery\.
+
+### support\_tickets
+
+### notifications
+
+### promo\_codes
+
+### driver\_earnings
+
+### admin\_audit\_logs
+
+Design relationships and indexes properly\.
+
+### Delivery state machine
+
+Use controlled statuses such as:
+
+draft
+quoted
+payment\_pending
+paid
+searching\_driver
+driver\_assigned
+driver\_en\_route\_pickup
+driver\_arrived\_pickup
+pickup\_verified
+picked\_up
+in\_transit
+driver\_arrived\_delivery
+delivery\_verification\_pending
+delivered
+cancelled
+failed
+refunded
+
+Prevent invalid status jumps\.
+
+Create server\-side functions where appropriate\.
+
+### Security
+
+Implement Supabase Row Level Security\.
+
+Customer:
+
+- sees only their own account and deliveries\.
+
+Driver:
+
+- sees only available offers they are authorized to see\.
+- sees full delivery information only after appropriate assignment\.
+- can update only permitted delivery fields\.
+- can update their own location\.
+
+Admin:
+
+- role\-protected access\.
+
+Never rely only on hiding buttons in the frontend for security\.
+
+Validate authorization on the server/database layer\.
+
+Create database migrations and useful seed/demo data separately from production data\.

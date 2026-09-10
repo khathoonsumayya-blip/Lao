@@ -1,0 +1,134 @@
+I need you to restructure the existing Anything Anywhere project into THREE SEPARATE applications that share ONE backend, database, authentication system, and real-time delivery system.
+
+Do NOT rebuild the project from scratch and do NOT remove working functionality.
+
+The current implementation looks like one combined application with Customer, Driver, and Admin views. That is NOT the production architecture I want.
+
+Create:
+
+1. CUSTOMER APP
+
+* Separate public-facing application.
+* Customers must never see Driver or Admin navigation.
+* Customer signup/login.
+* Create delivery/order.
+* Pickup and drop-off addresses.
+* Package/item details.
+* Price/quote.
+* Payment.
+* Order confirmation.
+* Live driver status and tracking.
+* Delivery history.
+* Notifications.
+* Support/profile.
+* Responsive for iPhone, Android-sized screens, tablets, and web.
+
+Target production domain:
+www.anythinganywhere.com
+
+2. DRIVER APP
+
+* Completely separate application/interface.
+* Accessible only to registered/approved drivers.
+* Driver signup/onboarding.
+* Admin approval status.
+* Driver login.
+* Online/offline availability.
+* Available delivery requests.
+* Accept/reject delivery.
+* Pickup navigation/details.
+* Delivery navigation/details.
+* Delivery status progression.
+* Proof of pickup/delivery where implemented.
+* Earnings.
+* Delivery history.
+* Driver profile.
+* Notifications.
+* Customers must not be able to access driver functionality.
+
+Target production domain:
+driver.anythinganywhere.com
+
+3. ADMIN APP
+
+* Completely separate private management dashboard.
+* No public signup.
+* Admin authentication and role protection.
+* Dashboard.
+* Manage customers.
+* Manage drivers and driver approvals.
+* Manage orders/deliveries.
+* View live delivery status.
+* Manage pricing.
+* Payments/refunds information where implemented.
+* Reports/analytics.
+* Support/issues.
+* System settings.
+* Admin functionality must be protected SERVER-SIDE, not merely hidden in the frontend.
+
+Target production domain:
+admin.anythinganywhere.com
+
+4. SHARED BACKEND
+    All three applications must communicate with the SAME backend and production database.
+
+Use one source of truth for:
+
+* users
+* roles
+* customers
+* drivers
+* driver approvals
+* orders
+* deliveries
+* delivery status
+* locations/tracking
+* payments
+* notifications
+* pricing
+* support
+* admin settings
+
+Maintain real-time synchronization.
+
+Example:
+Customer creates an order → Driver App receives the delivery request → driver accepts → Customer App immediately reflects the assigned driver → Admin App can see and manage the entire delivery.
+
+5. ROLE-BASED SECURITY
+
+Use explicit roles:
+CUSTOMER
+DRIVER
+ADMIN
+
+Protect backend APIs and data by role.
+
+Do NOT rely only on hiding buttons or routes.
+
+A CUSTOMER account must not be able to access Driver/Admin APIs by manually entering URLs.
+
+A DRIVER must not access Admin APIs.
+
+ADMIN gets only authorized administrative access.
+
+6. DEPLOYMENT
+
+Prepare the project so Customer, Driver and Admin can be independently published/deployed.
+
+Do not present a Customer/Driver/Admin app selector to public users.
+
+The Customer URL must directly load the Customer App.
+The Driver URL must directly load the Driver App login.
+The Admin URL must directly load the Admin login/dashboard.
+
+Keep the applications connected through the shared backend.
+
+Before making destructive changes, inspect the existing architecture and reuse all working components, APIs, database tables, styles, and functionality.
+
+After restructuring, test these full workflows:
+
+Customer signup/login → order creation → driver receives request → driver accepts → customer sees assignment → driver updates pickup/delivery status → customer receives status changes → admin sees complete delivery.
+
+Also test unauthorized access between Customer, Driver and Admin roles.
+
+Do not stop after changing the navigation. The goal is THREE independently deployable applications with ONE shared operational backend.

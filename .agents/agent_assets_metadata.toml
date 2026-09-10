@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "ydJT0iRS4BwwEhDrNwfik"
+uri = "file://attached_assets/anything-anywhere-driver-build-notes.md"
+type = "text"
+title = "Anything Anywhere Driver App build notes"
+description = "Architecture, security constraints, shared API behavior, private document storage, and development verification commands for the Driver App."
+logical_id = "73827130-db4b-4ac1-9322-56b6d9cfd387"
+content_hash = "sha256:b85cdde2c80b81118ed7da2847b93bfb5e7d9a3151e521de1898594999095cf9"
+size = 3112
+mtime_ms = 1787278828437
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:98003e0a-5b5f-4eab-a93b-da51a054e5db/73827130-db4b-4ac1-9322-56b6d9cfd387/7c8efe40-cff2-4357-ab82-ee994eef6d06"
+storage_version_token = "1787279034582897"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "M7PvH5UilM0qLuaqRju2J"
+uri = "file://screenshots/driver-app-final-mobile.jpg"
+type = "image"
+title = "Driver App — Final Mobile Check"
+description = "390×844 final runtime screenshot after the Driver navigation and profile-editing changes."
+logical_id = "78c1bdad-741e-4b2f-96e9-adef7327de61"
+content_hash = "sha256:b7ad029e362018ac85d31865e83d601dab75b3765c58b2ee8ff01314867db9e7"
+size = 22723
+mtime_ms = 1788719171585
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:98003e0a-5b5f-4eab-a93b-da51a054e5db/78c1bdad-741e-4b2f-96e9-adef7327de61/2ba48d89-eb36-4812-843d-89e98e9f2c55"
+storage_version_token = "1788719197177604"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "ovEl19lonRZDMTyj4Zr6W"
+uri = "file://artifacts/anything-anywhere/public/lao-brand-mark.svg"
+type = "image"
+title = "Lao Brand Mark"
+description = "Scalable orange speed-line, location-pin, and package logo used across the Customer, Driver, and Admin apps."
+logical_id = "807fd399-4aa0-45be-b87d-035968436091"
+content_hash = "sha256:4a3e22b90be9089da1d147d21523d6693ac517673c96ef021db3866b3082c40e"
+size = 1075
+mtime_ms = 1788896722433
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:98003e0a-5b5f-4eab-a93b-da51a054e5db/807fd399-4aa0-45be-b87d-035968436091/6d89a9a8-22b4-422f-8191-aef095295fa4"
+storage_version_token = "1788896893729414"
+content_type = "image/svg+xml"

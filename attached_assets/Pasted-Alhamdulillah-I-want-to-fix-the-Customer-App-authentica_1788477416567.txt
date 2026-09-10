@@ -1,0 +1,65 @@
+Alhamdulillah, I want to fix the Customer App authentication UX and persistent login behavior.
+
+Do NOT modify or regress the completed Admin authentication, Admin Settings, aa_admin_session, or the iPad Admin password-input implementation.
+
+Customer App requirements:
+
+1. Logged-out Customer App
+
+* Make LOGIN the primary and prominent authentication action/screen.
+* The Login form must be clearly visible and appropriately sized on desktop, iPad, and mobile.
+* SIGN UP should be secondary, for example:
+    “Don’t have an account? Sign Up”
+* Do not show Sign Up prominently while making Login tiny or difficult to find.
+* Preserve the existing signup functionality.
+
+2. Persistent Customer login
+    After a customer successfully logs in:
+
+* Keep the customer authenticated across page refreshes.
+* Keep the customer authenticated when the browser/app is closed and reopened, subject to normal server-side session validity.
+* Restore the authenticated customer session automatically when the Customer App starts.
+* Do not require the customer to log in again on every refresh or reopen.
+* Keep the customer logged in until they explicitly choose Log Out, unless the server invalidates/revokes the session or the account is disabled.
+* Logout must continue to completely clear/invalidate the Customer session.
+
+3. Authentication architecture
+
+* Inspect the existing Customer authentication/session implementation before changing anything.
+* Reuse the existing Customer session mechanism.
+* Do not create a duplicate authentication system.
+* Do not store passwords, password hashes, or sensitive authentication secrets in frontend/localStorage.
+* Use secure persistent cookie/session behavior appropriate for the existing architecture.
+* Preserve server-side authorization.
+
+4. Customer/Admin separation
+
+* Customer sessions must remain unable to authenticate Admin routes.
+* Do not modify aa_admin_session or Admin authentication behavior.
+* Admin and Customer authentication must remain properly separated.
+
+5. Testing
+    Before making changes, identify the current reason Login is visually small/secondary.
+    Then implement the minimum necessary fix.
+
+Verify:
+
+* Logged-out Customer App clearly shows Login.
+* Login works.
+* Signup still works.
+* After login, refresh does not log the customer out.
+* Close/reopen the Customer App/browser and verify the session is restored.
+* Logout works and actually ends the session.
+* After logout, reopening the Customer App shows the logged-out Login screen.
+* Customer session cannot access Admin routes.
+* Test desktop, iPad emulation, and mobile responsive layouts.
+
+Do not change unrelated Customer features.
+
+Report:
+
+* Root cause of the Login UI problem.
+* Root cause of any session persistence problem.
+* Exact files/code areas changed.
+* Tests performed and results.
+* Confirm explicitly that Admin authentication was not modified.

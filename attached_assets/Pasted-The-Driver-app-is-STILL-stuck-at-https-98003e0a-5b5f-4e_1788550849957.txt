@@ -1,0 +1,153 @@
+The Driver app is STILL stuck at:
+
+https://98003e0a-5b5f-4eab-a93b-da51a054e5db-00-8h9noluamrze.picard.replit.dev/driver/onboarding
+
+I cannot reach or test the other Driver pages.
+
+Do NOT just tell me the route guard is fixed. Perform a complete runtime investigation and fix the actual blocker.
+
+1. Reproduce the problem first
+
+Open the Driver app from a clean/unauthenticated browser session and reproduce exactly what happens at /driver/onboarding.
+
+Check:
+
+* browser console errors
+* network/API requests
+* HTTP status codes
+* authentication/session response
+* Driver profile response
+* onboarding completion status
+* redirects
+* React/router state
+* loading states that never resolve
+* API requests that repeatedly fail
+* any error boundary or silent exception
+
+Identify the exact condition that prevents leaving /driver/onboarding.
+
+2. Verify Driver authentication separately
+
+The Driver app must have its own reliable authentication/authorization flow.
+
+Verify that:
+
+* unauthenticated users cannot access Driver protected pages
+* Customer sessions cannot access Driver pages
+* Admin sessions cannot access Driver pages
+* an authenticated Driver can access Driver pages
+* Driver session persists after refresh
+* logout actually destroys the Driver session
+* after logout, protected Driver pages redirect to Driver login/access gate
+
+Do not solve this by hiding errors or simply forcing navigation.
+
+3. Fix onboarding state
+
+Inspect the actual Driver onboarding record/profile returned by the backend.
+
+Determine why the application believes onboarding is incomplete or why the onboarding page cannot advance.
+
+Check all fields involved, including:
+
+* Driver account
+* Driver profile
+* onboarding status
+* required onboarding fields
+* verification status
+* approval status
+* persistence/database record
+* API response shape
+* frontend expectations versus backend response
+
+If onboarding is already complete, /driver/onboarding must automatically continue to the correct Driver home/dashboard.
+
+If onboarding is incomplete, the page must provide a working way to complete it.
+
+If the Driver is waiting for approval/verification, show the appropriate status page instead of trapping the user in an infinite loading/redirect loop.
+
+4. Make onboarding testable
+
+For development/testing, create a safe deterministic way to test each Driver state:
+
+1. New Driver → onboarding
+2. Onboarding partially complete → resume onboarding
+3. Onboarding complete → Driver dashboard
+4. Submitted/pending verification → pending screen
+5. Approved Driver → Driver dashboard
+6. Logged-out Driver → Driver login
+7. Wrong-role account → access denied
+
+Do NOT create a production security bypass.
+
+5. Verify every Driver route
+
+After fixing onboarding, automatically test the complete Driver route tree instead of stopping at /driver/onboarding.
+
+Find every Driver page/route in the codebase and test:
+
+* direct URL navigation
+* navigation from Driver dashboard
+* browser refresh
+* back/forward navigation
+* authenticated Driver access
+* unauthenticated access
+* wrong-role access
+* loading states
+* API failures
+* empty states
+* logout behavior
+
+6. Pay special attention to API failures
+
+If the frontend is repeatedly calling Driver APIs before the Driver session/profile is established, fix the sequencing.
+
+There must be a clean flow:
+
+Authentication
+→ Driver authorization
+→ Driver profile/session
+→ onboarding status
+→ correct Driver destination
+
+Do not allow protected Driver pages to fire Driver API requests before the required authentication state is known.
+
+7. Do not use fake frontend-only state
+
+Do not make the page appear fixed by:
+
+* hardcoding onboarding as complete
+* automatically navigating after a timeout
+* hiding errors
+* disabling route guards
+* using localStorage as the source of truth for authorization
+* creating a fake Driver session
+
+The database/backend must remain the source of truth.
+
+8. Final runtime verification
+
+After making the fix:
+
+* restart the app
+* clear/reload the browser session
+* open /driver/onboarding
+* test the complete Driver flow from the beginning
+* confirm that I can reach the Driver dashboard
+* then test every other Driver page
+
+At the end, give me:
+
+1. Exact root cause of the onboarding blocker
+2. Exact files changed
+3. Exact backend/API issue, if any
+4. Exact frontend/router issue, if any
+5. Driver routes/pages tested
+6. Result of each test
+7. Any remaining issue
+
+IMPORTANT:
+
+Do not stop after confirming that /driver/onboarding loads.
+
+The goal is to make the ENTIRE Driver app navigable and testable so I can audit every Driver page.

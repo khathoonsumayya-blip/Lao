@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Anything Anywhere — Vintage Cargo Redesign</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root{
+    --paper:#F2E9D8;
+    --paper-dark:#E6D8BC;
+    --card:#FBF7EE;
+    --ink:#1D2B3A;
+    --ink-soft:#4A5A70;
+    --ink-faint:#8C93A0;
+    --cargo:#FF7A29;
+    --cargo-dark:#E0620F;
+    --stamp:#B5222A;
+    --route:#3F7D58;
+    --gold:#C79A3E;
+    --line-col:#C9BB9C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#0E1620;
+    background-image: radial-gradient(circle at 20% 10%, #182233 0%, #0E1620 55%);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:28px 12px 60px;
+  }
+  h1.studio-title{
+    color:#F2E9D8; font-weight:900; letter-spacing:-.02em; font-size:14px;
+    text-transform:uppercase; opacity:.55; margin:0 0 4px; text-align:center;
+  }
+  p.studio-sub{
+    color:#8C93A0; font-size:11.5px; margin:0 0 20px; text-align:center; max-width:520px; line-height:1.5;
+  }
+
+  /* legend */
+  .legend{
+    display:flex; gap:14px; flex-wrap:wrap; justify-content:center; max-width:600px; margin:0 0 20px;
+    background:#182233; border-radius:14px; padding:14px 18px;
+  }
+  .legend .swatch{ display:flex; align-items:center; gap:6px; font-size:10px; color:#C7CEDA; font-weight:700; text-transform:uppercase; letter-spacing:.04em;}
+  .legend .dot{ width:14px; height:14px; border-radius:4px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.15);}
+
+  /* module groups */
+  .tabs-wrap{ max-width:900px; margin-bottom:20px; }
+  .tabgroup{ margin-bottom:8px; }
+  .tabgroup-label{
+    color:#5D6B80; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.1em;
+    margin:10px 4px 5px;
+  }
+  .tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+  .tabs button{
+    border:none; background:#182233; color:#8C93A0; font-weight:700; font-size:10.5px;
+    letter-spacing:.03em; text-transform:uppercase; padding:8px 12px; border-radius:9px; cursor:pointer; transition:.15s;
+  }
+  .tabs button.active{ background:var(--cargo); color:#1D2B3A; }
+
+  /* phone frame */
+  .phone{
+    width:390px; max-width:92vw; height:844px; max-height:82vh;
+    background:var(--ink); border-radius:46px; padding:14px; position:relative;
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.7), 0 0 0 1px #000;
+  }
+  .phone-inner{
+    background:var(--paper); width:100%; height:100%; border-radius:34px; overflow:hidden;
+    position:relative; display:flex; flex-direction:column;
+  }
+  .notch{ position:absolute; top:14px; left:50%; transform:translateX(-50%); width:120px; height:26px; background:var(--ink); border-radius:0 0 16px 16px; z-index:50; }
+
+  /* shared top nav (back/forward + page name) */
+  .topnav{
+    display:flex; align-items:center; justify-content:space-between; padding:30px 14px 8px; flex-shrink:0;
+  }
+  .nav-btn{
+    width:32px; height:32px; border-radius:10px; background:var(--card); border:none;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+    box-shadow:0 3px 8px -6px rgba(0,0,0,.3); transition:opacity .15s, transform .1s;
+  }
+  .nav-btn:active{ transform:scale(.92); }
+  .nav-btn.disabled{ opacity:.3; pointer-events:none; }
+  .nav-btn svg{ width:15px; height:15px; }
+  .nav-title{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .nav-eyebrow{ font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--cargo-dark); font-weight:800; }
+  .nav-pagename{ font-size:14px; font-weight:900; color:var(--ink); letter-spacing:-0.01em; text-transform:uppercase; }
+
+  /* sliding stack of screens */
+  .stack{ position:relative; flex:1; overflow:hidden; }
+  .screen{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    opacity:0; transform:translateX(26px); transition:opacity .28s ease, transform .32s cubic-bezier(.2,.7,.2,1);
+    pointer-events:none;
+  }
+  .screen.active{ opacity:1; transform:translateX(0); pointer-events:auto; z-index:2; }
+  .screen.exit-left{ transform:translateX(-26px); }
+  .status-row{ display:flex; justify-content:space-between; padding:14px 24px 2px; font-size:12px; font-weight:700; color:var(--ink); }
+  .content{ flex:1; overflow-y:auto; padding:0 20px 100px; }
+  .content::-webkit-scrollbar{ display:none; }
+
+  /* type */
+  .eyebrow{ font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 4px; }
+  .h-block{ font-weight:900; letter-spacing:-0.03em; text-transform:uppercase; color:var(--ink); line-height:.95; }
+  .mono{ font-family:"SF Mono","Courier New",monospace; letter-spacing:.06em; }
+
+  /* screen header w/ back arrow (ScreenHeader component) */
+  .scr-head{ display:flex; align-items:center; gap:12px; padding:16px 20px 4px; }
+  .back-btn{
+    width:34px; height:34px; border-radius:10px; background:var(--card); display:flex; align-items:center;
+    justify-content:center; font-weight:900; color:var(--ink); flex-shrink:0; box-shadow:0 3px 8px -6px rgba(0,0,0,.3);
+  }
+
+  /* stamp badge (StampBadge component) */
+  .stamp{
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    width:120px; height:120px; border-radius:50%; border:2.5px solid var(--stamp); color:var(--stamp);
+    transform:rotate(-11deg); font-weight:900; text-transform:uppercase; text-align:center; position:relative; opacity:.92;
+    -webkit-mask-image: radial-gradient(circle, #000 97%, transparent 100%);
+  }
+  .stamp::before{ content:""; position:absolute; inset:8px; border:1.5px dashed var(--stamp); border-radius:50%; opacity:.7; }
+  .stamp.sm{ width:64px; height:64px; }
+  .stamp .l1{ font-size:12.5px; letter-spacing:.05em; margin-top:6px; }
+  .stamp.sm .l1{ font-size:8px; margin-top:2px; }
+  .stamp .l2{ font-size:9px; letter-spacing:.1em; margin-top:3px; }
+  .stamp.sm .l2{ font-size:6px; margin-top:1px; }
+  .stamp .star{ font-size:14px; margin-top:2px; }
+  .stamp.sm .star{ font-size:8px; margin-top:0; }
+  .stamp.route{ border-color:var(--route); color:var(--route); }
+  .stamp.gold{ border-color:var(--gold); color:#7A5B1E; }
+
+  /* ticket card (TicketCard component) */
+  .ticket{ background:var(--card); border-radius:16px; box-shadow:0 1px 0 rgba(0,0,0,.03), 0 6px 18px -10px rgba(29,43,58,.35); position:relative; }
+  .perf{ position:relative; border-top:1.5px dashed var(--line-col); margin:0 18px; }
+  .perf::before, .perf::after{ content:""; position:absolute; top:-8px; width:16px; height:16px; background:var(--paper); border-radius:50%; }
+  .perf::before{ left:-27px; } .perf::after{ right:-27px; }
+
+  /* mascot: line-art cargo courier (replaces 3D Ari) */
+  .ari{ width:54px; height:54px; flex-shrink:0; }
+  .ari-lg{ width:96px; height:96px; }
+  .ari-bubble{
+    display:flex; gap:10px; align-items:flex-start; background:var(--card); border-radius:14px;
+    padding:12px 14px; box-shadow:0 4px 12px -8px rgba(0,0,0,.3);
+  }
+  .ari-bubble .txt{ font-size:11px; color:var(--ink-soft); font-weight:600; line-height:1.45; }
+  .ari-bubble .txt b{ color:var(--ink); }
+
+  /* buttons (PrimaryButton) */
+  .btn-primary{ width:100%; background:var(--ink); color:var(--paper); border:none; padding:15px; border-radius:14px;
+    font-weight:900; text-transform:uppercase; letter-spacing:.06em; font-size:12.5px; cursor:pointer; }
+  .btn-cargo{ background:var(--cargo); color:#1D2B3A; }
+  .btn-outline{ background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--ink); }
+  .btn-sm{ padding:10px 16px; font-size:11px; border-radius:11px; width:auto; }
+
+  /* inputs */
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:6px; }
+  .field input, .field textarea{
+    width:100%; border:none; background:var(--card); border-radius:12px; padding:13px 14px; font-family:inherit;
+    font-size:13px; font-weight:600; color:var(--ink); outline:none; box-shadow:0 3px 10px -8px rgba(0,0,0,.3);
+  }
+
+  /* status pill (StatusPill component) */
+  .badge{ font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; padding:4px 9px; border-radius:20px; }
+  .badge.transit{ background:#FFE7D3; color:var(--cargo-dark); }
+  .badge.delivered{ background:#DEF0E3; color:var(--route); }
+  .badge.pending{ background:#EFE7D6; color:var(--gold); }
+  .badge.cancelled{ background:#F5DEDE; color:var(--stamp); }
+
+  /* wizard footer / progress (WizardFooter component) */
+  .wiz-progress{ display:flex; align-items:center; gap:4px; margin:16px 0; }
+  .wiz-progress .seg{ flex:1; height:4px; border-radius:3px; background:var(--paper-dark); }
+  .wiz-progress .seg.done{ background:var(--route); }
+  .wiz-progress .seg.now{ background:var(--cargo); }
+  .wiz-steps{ display:flex; justify-content:space-between; margin-top:22px; }
+  .wiz-step{ display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+  .wiz-step .num{ width:26px; height:26px; border-radius:50%; background:var(--card); border:2px solid var(--line-col);
+    display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:900; color:var(--ink-faint); }
+  .wiz-step.done .num{ background:var(--route); border-color:var(--route); color:#fff; }
+  .wiz-step.now .num{ background:var(--cargo); border-color:var(--cargo); color:var(--ink); }
+  .wiz-step .lbl{ font-size:8.5px; font-weight:800; text-transform:uppercase; color:var(--ink-faint); text-align:center; }
+  .wiz-step.now .lbl{ color:var(--ink); }
+
+  /* category grid */
+  .cat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+  .cat{ display:flex; flex-direction:column; align-items:center; gap:7px; background:var(--card); border-radius:14px;
+    padding:12px 4px 10px; box-shadow:0 4px 10px -6px rgba(29,43,58,.25); }
+  .cat.sel{ box-shadow:0 0 0 2px var(--cargo), 0 4px 10px -6px rgba(29,43,58,.25); }
+  .cat-ic{ width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; }
+  .cat-label{ font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); text-align:center; }
+
+  /* map */
+  .map-box{ height:170px; border-radius:16px; margin:14px 0 18px; position:relative; overflow:hidden;
+    background:linear-gradient(180deg, #E9E1CC 0%, #E2D8BC 100%); box-shadow:inset 0 0 0 1px rgba(0,0,0,.04); }
+  .map-box svg{ position:absolute; inset:0; }
+
+  /* timeline */
+  .timeline{ position:relative; padding-left:26px; }
+  .timeline::before{ content:""; position:absolute; left:6px; top:6px; bottom:6px; width:0; border-left:2px dashed var(--line-col); }
+  .t-step{ position:relative; padding-bottom:26px; }
+  .t-dot{ position:absolute; left:-26px; top:1px; width:14px; height:14px; border-radius:50%; background:var(--card); border:2.5px solid var(--ink-faint); }
+  .t-step.done .t-dot{ border-color:var(--route); background:var(--route); }
+  .t-step.now .t-dot{ border-color:var(--cargo); background:var(--cargo); box-shadow:0 0 0 5px rgba(255,122,41,.2); }
+  .t-title{ font-weight:800; font-size:13px; }
+  .t-time{ font-size:10.5px; color:var(--ink-faint); margin-top:2px; }
+
+  /* stars */
+  .stars{ display:flex; gap:6px; font-size:24px; }
+  .stars span{ color:#DAD0B6; } .stars span.on{ color:var(--cargo); }
+
+  /* avatar */
+  .avatar{ width:52px; height:52px; border-radius:50%; background:linear-gradient(155deg,#22344A,#1D2B3A);
+    display:flex; align-items:center; justify-content:center; color:var(--paper); font-weight:900; font-size:17px; flex-shrink:0; }
+  .avatar.sm{ width:38px; height:38px; font-size:13px; }
+
+  /* row list */
+  .list-row{ display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid #E6DBC2; }
+  .list-row:last-child{ border-bottom:none; }
+  .list-row .ic{ width:36px; height:36px; border-radius:10px; background:var(--card); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+  /* bottom nav */
+  .bottomnav{ position:absolute; bottom:0; left:0; right:0; background:var(--card); display:flex; justify-content:space-around;
+    padding:14px 10px 20px; border-top:1px solid #E6DBC2; }
+  .navitem{ display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--ink-faint); }
+  .navitem.on{ color:var(--cargo-dark); }
+  .navitem span{ font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; }
+  .navitem.on::after{ content:""; display:block; width:4px; height:4px; border-radius:50%; background:var(--cargo); margin-top:1px; }
+
+  /* driver / business navy variant */
+  .navy-block{ background:var(--ink); border-radius:18px; padding:18px 20px; color:var(--paper); position:relative; overflow:hidden; }
+  .navy-block::after{ content:""; position:absolute; right:-40px; top:-40px; width:120px; height:120px; background:var(--cargo); border-radius:50%; opacity:.18; }
+
+  /* wax seal small icon → package-box marker */
+  .seal{ width:30px; height:30px; border-radius:9px; background:var(--stamp); display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; box-shadow:0 3px 8px -4px rgba(181,34,42,.6); }
+  .seal svg{ width:16px; height:16px; }
+
+  .earnings-num{ font-size:34px; font-weight:900; letter-spacing:-0.02em; }
+
+  /* prohibited items disclosure */
+  .prohibited{
+    background:#F5DEDE; border:1.5px dashed var(--stamp); border-radius:12px; padding:14px 16px; margin:16px 0 4px;
+  }
+  .prohibited-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .prohibited-head .stamp.sm{ width:38px; height:38px; }
+  .prohibited-head .stamp.sm .l1{ font-size:6.5px; }
+  .prohibited-title{ font-weight:900; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:#7A1E22; }
+  .prohibited-sub{ font-size:10.5px; color:#7A1E22; font-weight:600; margin:0 0 8px; line-height:1.4; }
+  .prohibited ul{ margin:0; padding-left:18px; }
+  .prohibited li{ font-size:11px; color:#7A1E22; font-weight:700; line-height:1.7; }
+
+  /* Ari mascot icon (shared) */
+  .ari-icon{ width:100%; height:100%; }
+
+  /* floating "Ask Ari" button — persists across screens */
+  .fab{
+    position:absolute; right:16px; bottom:104px; z-index:40;
+    width:56px; height:56px; border-radius:18px; background:var(--cargo);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    box-shadow:0 10px 22px -8px rgba(224,98,15,.65), 0 0 0 3px var(--paper);
+    transition:transform .15s;
+  }
+  .fab:active{ transform:scale(.93); }
+  .fab svg{ width:30px; height:30px; }
+  .fab-badge{
+    position:absolute; top:-4px; right:-4px; width:16px; height:16px; border-radius:50%;
+    background:var(--stamp); color:#fff; font-size:9px; font-weight:900; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 2px var(--paper);
+  }
+
+  /* Ari chat screen */
+  .chat-log{ display:flex; flex-direction:column; gap:12px; padding-top:6px; }
+  .chat-row{ display:flex; gap:8px; align-items:flex-end; }
+  .chat-row.user{ flex-direction:row-reverse; }
+  .chat-avatar{ width:30px; height:30px; border-radius:9px; background:var(--cargo); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .chat-avatar svg{ width:18px; height:18px; }
+  .chat-bubble{
+    max-width:76%; padding:11px 14px; border-radius:15px; font-size:12px; font-weight:600; line-height:1.45;
+  }
+  .chat-bubble.ari{ background:var(--card); color:var(--ink); border-bottom-left-radius:4px; box-shadow:0 4px 10px -8px rgba(0,0,0,.3); }
+  .chat-bubble.user{ background:var(--ink); color:var(--paper); border-bottom-right-radius:4px; }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .chip{
+    padding:9px 13px; border-radius:20px; background:var(--card); font-size:10.5px; font-weight:700;
+    color:var(--ink-soft); box-shadow:0 3px 8px -6px rgba(0,0,0,.3);
+  }
+  .chat-inputbar{
+    display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--card);
+    border-top:1px solid #E6DBC2; flex-shrink:0;
+  }
+  .chat-inputbar input{ flex:1; border:none; background:transparent; outline:none; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--ink); }
+  .chat-send{ width:36px; height:36px; border-radius:11px; background:var(--cargo); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .chat-send svg{ width:16px; height:16px; }
+
+  /* ID card v2 — richer secure package card */
+  .idc-secure{ display:flex; align-items:center; gap:6px; justify-content:center; font-size:10px; font-weight:700; color:var(--ink-soft); padding:10px 0 4px; }
+  .idc-secure svg{ width:12px; height:12px; flex-shrink:0; }
+  .idc-hero{ padding:16px; display:flex; gap:12px; align-items:flex-start; }
+  .idc-box{ width:56px; height:56px; border-radius:12px; background:rgba(242,233,216,.14); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .idc-updated{ display:flex; align-items:center; gap:5px; font-size:9.5px; opacity:.75; margin-top:8px; }
+  .idc-qr{ width:66px; height:66px; background:#fff; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; flex-shrink:0; }
+  .idc-qr-grid{ width:42px; height:42px; background:
+      linear-gradient(90deg, #1D2B3A 0 3px, transparent 3px 6px) repeat-x,
+      linear-gradient(0deg, #1D2B3A 0 3px, transparent 3px 6px) repeat-y;
+    background-size:6px 100%, 100% 6px; position:relative; }
+  .idc-qr-grid::before, .idc-qr-grid::after{ content:""; position:absolute; width:12px; height:12px; border:2.5px solid #1D2B3A; border-radius:2px; }
+  .idc-qr-grid::before{ top:0; left:0; }
+  .idc-qr-grid::after{ bottom:0; right:0; }
+  .idc-qr-label{ font-size:7px; font-weight:800; color:#1D2B3A; text-transform:uppercase; letter-spacing:.04em; }
+  .idc-people{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .idc-person{ text-align:center; }
+  .idc-person .role{ font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--cargo-dark); margin-bottom:6px; }
+  .idc-person .nm{ font-weight:800; font-size:11px; margin-top:6px; }
+  .idc-person .loc{ font-size:9px; color:var(--ink-faint); font-weight:600; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:2px; }
+  .idc-stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .idc-stat{ padding:12px 14px; }
+  .idc-stat .lbl{ font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--cargo-dark); display:flex; align-items:center; gap:4px; margin-bottom:4px; }
+  .idc-stat .val{ font-weight:900; font-size:13.5px; }
+  .idc-otp-row{ display:flex; align-items:center; gap:10px; padding:10px 0; }
+  .idc-otp-icon{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .idc-otp-icon.done{ background:var(--route); }
+  .idc-otp-icon.pending{ background:var(--gold); }
+  .idc-otp-title{ font-weight:800; font-size:12px; }
+  .idc-otp-sub{ font-size:9.5px; font-weight:700; }
+  .idc-otp-sub.done{ color:var(--route); }
+  .idc-otp-sub.pending{ color:#8A6A22; }
+  .idc-otp-time{ margin-left:auto; text-align:right; font-size:11px; font-weight:800; color:var(--ink-soft); }
+  .idc-actions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:4px; }
+  .idc-action{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 4px; }
+  .idc-action .ic{ width:30px; height:30px; border-radius:9px; background:var(--paper-dark); display:flex; align-items:center; justify-content:center; }
+  .idc-action span{ font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.02em; color:var(--ink-soft); text-align:center; }
+  .idc-action.warn .ic{ background:#F5DEDE; }
+  .idc-action.warn span{ color:var(--stamp); }
+</style>
+</head>
+<body>
+
+<h1 class="studio-title">Anything Anywhere — Vintage Cargo Redesign · Reference</h1>
+<p class="studio-sub">Customer app only — driver and admin/business tools are being built as two separate, cross-linked apps on this same vintage cargo system. Restyled into the cream/navy/cargo-orange postal aesthetic, with a persistent "Ask Ari" AI assistant, a prohibited-items disclosure on booking, and package-box pickup/drop-off markers.</p>
+
+<div class="legend">
+  <div class="swatch"><span class="dot" style="background:#F2E9D8;"></span>Paper</div>
+  <div class="swatch"><span class="dot" style="background:#1D2B3A;"></span>Ink Navy</div>
+  <div class="swatch"><span class="dot" style="background:#FF7A29;"></span>Cargo Orange</div>
+  <div class="swatch"><span class="dot" style="background:#B5222A;"></span>Wax Stamp</div>
+  <div class="swatch"><span class="dot" style="background:#3F7D58;"></span>Route Green</div>
+  <div class="swatch"><span class="dot" style="background:#C79A3E;"></span>Gold</div>
+</div>
+
+<div class="tabs-wrap">
+  <div class="tabgroup">
+    <div class="tabgroup-label">Onboarding · Home</div>
+    <div class="tabs">
+      <button class="active" data-s="splash">Splash</button>
+      <button data-s="welcome">Welcome</button>
+      <button data-s="home">Home</button>
+    </div>
+  </div>
+  <div class="tabgroup">
+    <div class="tabgroup-label">Booking Flow</div>
+    <div class="tabs">
+      <button data-s="category">Package Type</button>
+      <button data-s="fragile">Fragile & Photos</button>
+      <button data-s="review">Review Booking</button>
+      <button data-s="pay">Payment</button>
+    </div>
+  </div>
+  <div class="tabgroup">
+    <div class="tabgroup-label">Tracking</div>
+    <div class="tabs">
+      <button data-s="track">Live Track</button>
+      <button data-s="idcard">Package ID Card</button>
+    </div>
+  </div>
+  <div class="tabgroup">
+    <div class="tabgroup-label">Orders · Wallet · Profile</div>
+    <div class="tabs">
+      <button data-s="orders">My Orders</button>
+      <button data-s="wallet">Wallet</button>
+      <button data-s="profile">Profile</button>
+    </div>
+  </div>
+  <div class="tabgroup">
+    <div class="tabgroup-label">AI Assistant</div>
+    <div class="tabs">
+      <button data-s="ari">Ask Ari</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="phone-inner">
+
+  <div class="topnav">
+    <button class="nav-btn disabled" id="navBack" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M14.5 6L8.5 12L14.5 18" stroke="#E0620F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="nav-title">
+      <span class="nav-eyebrow">Anything Anywhere</span>
+      <span class="nav-pagename" id="navPageName">Splash</span>
+    </div>
+    <button class="nav-btn" id="navFwd" aria-label="Forward">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9.5 6L15.5 12L9.5 18" stroke="#E0620F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="stack" id="stack">
+
+  <!-- SPLASH -->
+  <div class="screen active" id="splash">
+    <div class="content" style="padding-top:0; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; gap:20px;">
+      <div style="width:96px; height:96px; border-radius:26px; background:linear-gradient(155deg, #22344A 0%, #1D2B3A 55%, var(--cargo) 140%); display:flex; align-items:center; justify-content:center; box-shadow:0 14px 30px -10px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08); position:relative;">
+        <svg width="50" height="50" viewBox="0 0 48 48" fill="none">
+          <path d="M24 6L42 15.5V32.5L24 42L6 32.5V15.5L24 6Z" stroke="#F2E9D8" stroke-width="2.6" stroke-linejoin="round"/>
+          <path d="M24 6V22M24 22L42 15.5M24 22L6 15.5" stroke="#F2E9D8" stroke-width="2.6" stroke-linejoin="round"/>
+          <path d="M24 22V42" stroke="#F2E9D8" stroke-width="2.6" stroke-linejoin="round"/>
+          <path d="M16 11.2L34 20.4" stroke="#FF7A29" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+        <div class="h-block" style="font-size:27px;">ANYTHING<span style="color:var(--cargo);">ANYWHERE</span></div>
+        <div class="eyebrow" style="font-size:11.5px;">No Tips · Best Service</div>
+      </div>
+      <p style="max-width:220px; font-size:12px; color:var(--ink-soft); font-weight:600; line-height:1.55; margin:0;">One app to send it, track it, and get it there — anything, anywhere.</p>
+      <div style="width:100%; padding:0 20px; margin-top:6px;">
+        <button class="btn-primary btn-cargo">Get Started</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WELCOME / LOGIN -->
+  <div class="screen" id="welcome">
+    <div class="content" style="padding-top:60px;">
+      <div class="eyebrow">Welcome back</div>
+      <div class="h-block" style="font-size:24px; margin-bottom:22px;">Sign in to send<br>your first parcel</div>
+      <div class="field"><label>Email or phone number</label><input placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+      <div style="text-align:right; font-size:11px; font-weight:700; color:var(--cargo-dark); margin:-6px 0 20px;">Forgot password?</div>
+      <button class="btn-primary btn-cargo">Log In</button>
+      <div style="text-align:center; font-size:10.5px; color:var(--ink-faint); font-weight:800; text-transform:uppercase; letter-spacing:.1em; margin:18px 0;">— or continue with —</div>
+      <button class="btn-primary btn-outline" style="margin-bottom:10px;">Continue with Google</button>
+      <button class="btn-primary btn-outline">Continue with Apple</button>
+      <div style="text-align:center; margin-top:22px; font-size:12px; color:var(--ink-soft);">New here? <b style="color:var(--ink);">Create an account</b></div>
+      <div style="position:absolute; right:16px; top:10px; width:68px; height:68px; display:flex; align-items:center; justify-content:center; transform:rotate(-8deg); filter:drop-shadow(0 8px 14px rgba(29,43,58,.3));">
+        <svg width="62" height="62" viewBox="0 0 64 64" fill="none">
+          <defs>
+            <linearGradient id="boxTop" x1="8" y1="10" x2="56" y2="26" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#FFC178"/>
+              <stop offset="1" stop-color="#FF7A29"/>
+            </linearGradient>
+            <linearGradient id="boxLeft" x1="8" y1="20" x2="32" y2="54" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#2A3F58"/>
+              <stop offset="1" stop-color="#1D2B3A"/>
+            </linearGradient>
+            <linearGradient id="boxRight" x1="32" y1="20" x2="56" y2="54" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#3A5476"/>
+              <stop offset="1" stop-color="#24374C"/>
+            </linearGradient>
+          </defs>
+          <!-- box body -->
+          <path d="M32 26L8 19V45L32 54V26Z" fill="url(#boxLeft)"/>
+          <path d="M32 26L56 19V45L32 54V26Z" fill="url(#boxRight)"/>
+          <path d="M8 19L32 10L56 19L32 26L8 19Z" fill="url(#boxTop)"/>
+          <!-- top face fold lines -->
+          <path d="M20 15L44 22" stroke="#E0620F" stroke-width="1.3" opacity=".55"/>
+          <!-- tape -->
+          <path d="M32 26V54" stroke="#FDEBD4" stroke-width="3.5"/>
+          <path d="M18 13.6L18 24.4M46 13.6L46 24.4" stroke="#FDEBD4" stroke-width="3.5" opacity=".9"/>
+          <!-- shipping label sticker -->
+          <rect x="12.5" y="30" width="15" height="11" rx="1.6" fill="#F2E9D8" transform="rotate(-3 20 35)"/>
+          <path d="M15 33.5H24.5M15 36.5H22" stroke="#B5222A" stroke-width="1.4" stroke-linecap="round" transform="rotate(-3 20 35)"/>
+          <!-- gold star sticker -->
+          <path d="M46 30.5L47.4 33.3L50.5 33.8L48.2 35.9L48.8 39L46 37.5L43.2 39L43.8 35.9L41.5 33.8L44.6 33.3L46 30.5Z" fill="#C79A3E"/>
+          <!-- top ribbon accent -->
+          <path d="M32 10L38 13.3V21L32 26L26 21V13.3L32 10Z" fill="#B5222A" opacity=".92"/>
+          <path d="M29 15.3L32 17L35 15.3" stroke="#F2E9D8" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen" id="home">
+    <div class="status-row"><span>9:41</span><span>Cary, NC</span></div>
+    <div class="content">
+      <div style="padding-top:16px;"><div class="eyebrow">Good afternoon</div><div class="h-block" style="font-size:22px;">Hi, Sumayya 👋</div></div>
+
+      <div class="ticket" style="display:flex; align-items:center; gap:10px; padding:13px 16px; margin:14px 0 18px;">
+        <span>🔎</span><span style="font-size:13.5px; font-weight:600; color:var(--ink-faint);">Where's it going today?</span>
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:10px;">Package type</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px;">
+        <div class="ticket" style="text-align:center; padding:16px 8px;"><div style="font-size:22px;">📄</div><div class="cat-label" style="margin-top:6px;">Documents</div></div>
+        <div class="ticket" style="text-align:center; padding:16px 8px;"><div style="font-size:22px;">🏺</div><div class="cat-label" style="margin-top:6px;">Fragile</div></div>
+        <div class="ticket" style="text-align:center; padding:16px 8px;"><div style="font-size:22px;">💻</div><div class="cat-label" style="margin-top:6px;">Electronics</div></div>
+        <div class="ticket" style="text-align:center; padding:16px 8px;"><div style="font-size:22px;">📦</div><div class="cat-label" style="margin-top:6px;">Other</div></div>
+      </div>
+
+      <div class="navy-block" style="margin-bottom:16px;">
+        <div style="position:relative; z-index:2;">
+          <span class="badge" style="background:rgba(242,233,216,.18); color:var(--paper);">Live order</span>
+          <div style="font-weight:800; font-size:14.5px; margin-top:9px;">Ceramic vase — out for delivery</div>
+          <div style="font-size:11px; opacity:.75; margin-top:2px;">ETA today, 4:40 PM</div>
+        </div>
+      </div>
+      <button class="btn-primary btn-cargo">Track this order</button>
+
+      <div class="eyebrow" style="margin:20px 0 8px;">Recent</div>
+      <div class="ticket" style="padding:16px 18px; margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div><div style="font-weight:800; font-size:13.5px;">Fragile — Ceramic Vase</div><div class="mono" style="font-size:11px; color:var(--ink-faint);">#AA-2291-7734</div></div>
+          <span class="badge transit">In transit</span>
+        </div>
+        <div class="perf" style="margin-top:12px;"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:12px; font-size:11.5px; color:var(--ink-soft);">
+          <span>ETA 4:40 PM</span><span style="font-weight:800; color:var(--ink);">Track →</span>
+        </div>
+      </div>
+      <div class="ticket" style="padding:16px 18px;">
+        <div style="display:flex; justify-content:space-between;">
+          <div><div style="font-weight:800; font-size:13.5px;">Documents — Sealed Envelope</div><div class="mono" style="font-size:11px; color:var(--ink-faint);">#AA-2288-1102</div></div>
+          <span class="badge delivered">Delivered</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottomnav">
+      <div class="navitem on"><span style="font-size:16px;">🏠</span><span>Home</span></div>
+      <div class="navitem"><span style="font-size:16px;">📍</span><span>Track</span></div>
+      <div class="navitem"><span style="font-size:16px;">💳</span><span>Wallet</span></div>
+      <div class="navitem"><span style="font-size:16px;">👤</span><span>Profile</span></div>
+    </div>
+  </div>
+
+  <!-- CATEGORY / PACKAGE TYPE -->
+  <div class="screen" id="category">
+    <div class="content" style="padding-top:10px;">
+      <div class="eyebrow">Step 1 of 6</div>
+      <div class="wiz-progress"><div class="seg now"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div><div class="seg"></div></div>
+      <div class="cat-grid" style="margin-top:6px;">
+        <div class="cat"><div class="cat-ic" style="background:#E4EAF5;">📄</div><div class="cat-label">Documents</div></div>
+        <div class="cat sel"><div class="cat-ic" style="background:#FDE7E7;">📦</div><div class="cat-label">Parcel / Box</div></div>
+        <div class="cat"><div class="cat-ic" style="background:#E4F0E6;">🍱</div><div class="cat-label">Food</div></div>
+        <div class="cat"><div class="cat-ic" style="background:#F5EEE0;">🔌</div><div class="cat-label">Electronics</div></div>
+        <div class="cat"><div class="cat-ic" style="background:#EDE6F5;">👕</div><div class="cat-label">Clothing</div></div>
+        <div class="cat"><div class="cat-ic" style="background:#F1E8D8;">✳️</div><div class="cat-label">Other</div></div>
+      </div>
+      <div class="field" style="margin-top:6px;"><label>Item description</label><textarea style="height:64px;" placeholder="e.g. Birthday gift, important documents..."></textarea></div>
+      <div class="ari-bubble">
+        <svg class="ari" viewBox="0 0 62 62"><rect x="18" y="12" width="30" height="30" rx="4" fill="#FF7A29"/><circle cx="27" cy="26" r="2.4" fill="#1D2B3A"/><circle cx="39" cy="26" r="2.4" fill="#1D2B3A"/><path d="M26 33 Q33 38 40 33" stroke="#1D2B3A" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="20" y="4" width="26" height="8" rx="2" fill="#1D2B3A"/></svg>
+        <div class="txt"><b>Not sure what to pick?</b><br>Tap the courier icon anytime — happy to help you sort it out.</div>
+      </div>
+    </div>
+    <div style="position:absolute; bottom:0; left:0; right:0; padding:16px 20px 26px; background:var(--paper);">
+      <button class="btn-primary btn-cargo">Continue</button>
+    </div>
+  </div>
+
+  <!-- FRAGILE + PHOTOS -->
+  <div class="screen" id="fragile">
+    <div class="content" style="padding-top:10px;">
+      <div class="eyebrow">Step 4 of 6</div>
+      <div class="wiz-progress"><div class="seg done"></div><div class="seg done"></div><div class="seg done"></div><div class="seg now"></div><div class="seg"></div><div class="seg"></div></div>
+      <div class="ticket" style="padding:20px; text-align:center; margin:16px 0;">
+        <div class="stamp" style="margin:0 auto 10px;"><div class="l1">FRAGILE</div><div class="star">◇</div><div class="l2">HANDLE W/ CARE</div></div>
+        <div style="display:flex; gap:10px; margin-top:14px;">
+          <button class="btn-primary btn-cargo btn-sm" style="flex:1;">Yes, it's fragile</button>
+          <button class="btn-primary btn-outline btn-sm" style="flex:1;">No</button>
+        </div>
+      </div>
+      <div class="eyebrow" style="margin:18px 0 10px;">Add photos (optional)</div>
+      <div style="display:flex; gap:10px;">
+        <div class="ticket" style="width:78px; height:78px; display:flex; align-items:center; justify-content:center; font-size:22px;">📦</div>
+        <div class="ticket" style="width:78px; height:78px; display:flex; align-items:center; justify-content:center; color:var(--ink-faint); font-size:22px;">＋</div>
+      </div>
+      <div class="field" style="margin-top:20px;"><label>Delivery instructions</label><textarea style="height:60px;" placeholder="e.g. Ring the doorbell, leave at the door..."></textarea></div>
+    </div>
+    <div style="position:absolute; bottom:0; left:0; right:0; padding:16px 20px 26px; background:var(--paper);">
+      <button class="btn-primary btn-cargo">Continue</button>
+    </div>
+  </div>
+
+  <!-- REVIEW BOOKING -->
+  <div class="screen" id="review">
+    <div class="content" style="padding-top:10px;">
+      <div class="eyebrow">Step 6 of 6</div>
+      <div class="ticket" style="padding:18px; margin:10px 0 16px;">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <div class="seal"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8L12 4L20 8V16L12 20L4 16V8Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 8L12 12L20 8M12 12V20" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+          <div style="flex:1;">
+            <div class="eyebrow">Pickup</div>
+            <div style="font-weight:700; font-size:12.5px;">123 Main Street, Raleigh, NC</div>
+          </div>
+        </div>
+        <div class="perf" style="margin:14px 0;"></div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <div class="seal" style="background:var(--route);"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8L12 4L20 8V16L12 20L4 16V8Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 8L12 12L20 8M12 12V20" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+          <div style="flex:1;">
+            <div class="eyebrow">Delivery</div>
+            <div style="font-weight:700; font-size:12.5px;">456 Oak Avenue, Cary, NC</div>
+          </div>
+        </div>
+      </div>
+      <div class="ticket" style="padding:18px;">
+        <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:12.5px;"><span style="color:var(--ink-soft);">Package</span><span class="mono" style="font-weight:700;">Parcel / Box</span></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:12.5px;"><span style="color:var(--ink-soft);">Weight</span><span class="mono" style="font-weight:700;">2.5 lb</span></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:12.5px;"><span style="color:var(--ink-soft);">Fragile</span><span class="mono" style="font-weight:700;">Yes</span></div>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:12.5px;"><span style="color:var(--ink-soft);">Delivery option</span><span class="mono" style="font-weight:700;">Instant</span></div>
+        <div class="perf" style="margin:6px 0 10px;"></div>
+        <div style="display:flex; justify-content:space-between; font-weight:900; font-size:16px;"><span>Total</span><span class="mono">$14.75</span></div>
+      </div>
+      <div class="prohibited">
+        <div class="prohibited-head">
+          <div class="stamp sm"><div class="l1">NOT</div><div class="l2">ALLOWED</div></div>
+          <div class="prohibited-title">Prohibited items</div>
+        </div>
+        <p class="prohibited-sub">By requesting this delivery, you confirm your package does not contain any of the following:</p>
+        <ul>
+          <li>People or animals</li>
+          <li>Illegal items or stolen goods</li>
+          <li>Firearms, weapons, or ammunition</li>
+          <li>Alcohol, cannabis, or lottery tickets</li>
+          <li>Recreational drugs or tobacco</li>
+          <li>Dangerous or hazardous materials</li>
+        </ul>
+      </div>
+    </div>
+    <div style="position:absolute; bottom:0; left:0; right:0; padding:14px 20px 24px; background:var(--paper);">
+      <label style="display:flex; align-items:center; gap:8px; font-size:10.5px; font-weight:700; color:var(--ink-soft); margin-bottom:10px;">
+        <input type="checkbox" checked style="width:15px; height:15px; accent-color:var(--cargo);">
+        I confirm this package contains no prohibited items
+      </label>
+      <button class="btn-primary btn-cargo">Continue to Payment</button>
+    </div>
+  </div>
+
+  <!-- PAY -->
+  <div class="screen" id="pay">
+    <div class="status-row"><span>9:41</span><span>Checkout</span></div>
+    <div class="content">
+      <div style="padding-top:14px; margin-bottom:6px;"><div class="eyebrow">Payment</div><div class="h-block" style="font-size:20px;">Review & pay</div></div>
+      <div class="ticket" style="padding:18px; margin:16px 0;">
+        <div style="display:flex; justify-content:space-between; padding:9px 0; font-size:13px;"><span>Pickup — Cary, NC</span><span class="mono">2.1 mi</span></div>
+        <div style="display:flex; justify-content:space-between; padding:9px 0; font-size:13px;"><span>Delivery fee</span><span class="mono">$6.40</span></div>
+        <div style="display:flex; justify-content:space-between; padding:9px 0; font-size:13px;"><span>Fragile handling</span><span class="mono">$1.50</span></div>
+        <div style="display:flex; justify-content:space-between; padding:9px 0; font-size:13px;"><span>Service fee</span><span class="mono">$1.00</span></div>
+        <div class="perf"></div>
+        <div style="display:flex; justify-content:space-between; padding-top:10px; font-weight:900; font-size:16px;"><span>Total</span><span class="mono">$8.90</span></div>
+      </div>
+      <div style="background:#F4E8D3; border:1.5px dashed var(--gold); border-radius:12px; padding:12px 14px; font-size:11.5px; color:#7A5B1E; font-weight:700; margin:14px 0 4px; display:flex; gap:8px;">
+        <span>🛡️</span><span>No tip line, ever. The price you see is the price you pay.</span>
+      </div>
+      <div class="eyebrow" style="margin:18px 0 10px;">Pay with</div>
+      <div class="ticket" style="display:flex; align-items:center; gap:12px; padding:13px 14px; margin-bottom:10px; box-shadow:0 0 0 2px var(--cargo), 0 6px 18px -10px rgba(29,43,58,.35);">
+        <span>💳</span><span style="font-weight:700; font-size:12.5px;">Card •• 4471</span>
+      </div>
+      <div class="ticket" style="display:flex; align-items:center; gap:12px; padding:13px 14px; margin-bottom:10px;"><span>👛</span><span style="font-weight:700; font-size:12.5px;">Wallet Balance — $48.60</span></div>
+      <div class="ticket" style="display:flex; align-items:center; gap:12px; padding:13px 14px;"><span>💵</span><span style="font-weight:700; font-size:12.5px;">Cash on delivery</span></div>
+    </div>
+    <div style="position:absolute; bottom:0; left:0; right:0; padding:16px 20px 26px; background:var(--paper);">
+      <button class="btn-primary btn-cargo">Pay $8.90</button>
+    </div>
+  </div>
+
+  <!-- TRACK -->
+  <div class="screen" id="track">
+    <div class="status-row"><span>9:41</span><span>Live</span></div>
+    <div class="content">
+      <div style="padding-top:14px;"><div class="eyebrow">Order <span class="mono">#AA-2291-7734</span></div><div class="h-block" style="font-size:20px;">Fragile — Ceramic Vase</div></div>
+      <div class="map-box">
+        <svg viewBox="0 0 390 170" width="100%" height="100%">
+          <path d="M20 130 C 90 60, 160 150, 230 70 S 340 40, 370 30" stroke="#8C93A0" stroke-width="2" stroke-dasharray="6 7" fill="none" opacity=".6"/>
+          <circle cx="20" cy="130" r="6" fill="#3F7D58"/><circle cx="230" cy="70" r="7" fill="#FF7A29"/><circle cx="370" cy="30" r="6" fill="#1D2B3A"/>
+          <text x="8" y="150" font-size="9" fill="#4A5A70" font-weight="700">PICKUP</text><text x="335" y="20" font-size="9" fill="#4A5A70" font-weight="700">DROP</text>
+        </svg>
+      </div>
+      <div class="ticket" style="padding:16px 18px; margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between;">
+          <div><div class="eyebrow">ETA</div><div style="font-weight:900; font-size:15px;">Today, 4:40 PM</div></div>
+          <div><div class="eyebrow">Agent</div><div style="font-weight:900; font-size:15px;">Marcus R.</div></div>
+        </div>
+      </div>
+      <div class="eyebrow" style="margin-bottom:14px;">Route status</div>
+      <div class="timeline">
+        <div class="t-step done"><div class="t-dot"></div><div class="t-title">Order picked up</div><div class="t-time">2:05 PM — Cary Depot</div></div>
+        <div class="t-step done"><div class="t-dot"></div><div class="t-title">Fragile scan passed</div><div class="t-time">2:20 PM</div></div>
+        <div class="t-step now"><div class="t-dot"></div><div class="t-title">Out for delivery</div><div class="t-time">3:55 PM — 2.1 mi away</div></div>
+        <div class="t-step"><div class="t-dot"></div><div class="t-title">Delivered</div><div class="t-time">Expected 4:40 PM</div></div>
+      </div>
+    </div>
+    <div class="bottomnav">
+      <div class="navitem"><span style="font-size:16px;">🏠</span><span>Home</span></div>
+      <div class="navitem on"><span style="font-size:16px;">📍</span><span>Track</span></div>
+      <div class="navitem"><span style="font-size:16px;">💳</span><span>Wallet</span></div>
+      <div class="navitem"><span style="font-size:16px;">👤</span><span>Profile</span></div>
+    </div>
+  </div>
+
+  <!-- PACKAGE ID CARD (v2 — secure ID card, matches reference screenshot) -->
+  <div class="screen" id="idcard">
+    <div class="content" style="padding-top:0;">
+      <div class="idc-secure">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L20 5.5V11C20 16 16.5 19.7 12 21C7.5 19.7 4 16 4 11V5.5L12 2Z" stroke="#4A5A70" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 12L11 14.5L16 9" stroke="#4A5A70" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        This is a secure view. Only people you share it with can see this.
+      </div>
+
+      <div class="ticket navy-block idc-hero" style="margin:10px 0 14px;">
+        <div class="idc-box" style="position:relative; z-index:2;">
+          <svg width="30" height="30" viewBox="0 0 48 48" fill="none"><rect x="8" y="16" width="32" height="24" rx="2" fill="#FF7A29"/><path d="M8 16L24 8L40 16" stroke="#F2E9D8" stroke-width="2.2" stroke-linejoin="round" fill="none"/><path d="M8 16L24 24L40 16" stroke="#1D2B3A" stroke-width="1.6" stroke-linejoin="round" fill="none"/><line x1="24" y1="24" x2="24" y2="40" stroke="#1D2B3A" stroke-width="1.6"/></svg>
+        </div>
+        <div style="flex:1; position:relative; z-index:2;">
+          <div class="eyebrow" style="color:#C9A05C;">Package ID</div>
+          <div class="mono" style="font-weight:900; font-size:15px; margin-top:2px;">AA-20260805-10482</div>
+          <span class="badge transit" style="margin-top:9px; display:inline-block;">● On the way</span>
+          <div class="idc-updated">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 1 2.3 5.6" stroke="#F2E9D8" stroke-width="2" stroke-linecap="round"/><path d="M4 12V7M4 12H9" stroke="#F2E9D8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Updated 2 min ago
+          </div>
+        </div>
+        <div class="idc-qr" style="position:relative; z-index:2;">
+          <div class="idc-qr-grid"></div>
+          <div class="idc-qr-label">Scan</div>
+        </div>
+      </div>
+
+      <div class="ticket" style="padding:16px 18px; margin-bottom:14px;">
+        <div class="idc-people">
+          <div class="idc-person">
+            <div class="role">Sender</div>
+            <div class="avatar sm" style="margin:0 auto;">SK</div>
+            <div class="nm">Sarah Khan</div>
+            <div class="loc">📍 Raleigh, NC</div>
+          </div>
+          <div class="idc-person">
+            <div class="role">Recipient</div>
+            <div class="avatar sm" style="margin:0 auto;">AK</div>
+            <div class="nm">Ahmed Khan</div>
+            <div class="loc">📍 Cary, NC</div>
+          </div>
+          <div class="idc-person">
+            <div class="role">Delivery Partner</div>
+            <div class="avatar sm" style="margin:0 auto;">MJ</div>
+            <div class="nm">Michael J.</div>
+            <div class="loc">⭐ 4.9 · <span style="color:var(--gold);">Gold Partner</span></div>
+          </div>
+        </div>
+        <div class="perf" style="margin:16px 0 12px;"></div>
+        <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+          <div class="stamp sm"><div class="l1">FRAGILE</div></div>
+          <div style="font-size:10.5px; font-weight:700; color:var(--ink-soft); max-width:150px;">Handle with extra care — Package Care flagged on this order.</div>
+        </div>
+      </div>
+
+      <div class="idc-stat-grid" style="margin-bottom:14px;">
+        <div class="ticket idc-stat">
+          <div class="lbl">📅 Pickup Time</div>
+          <div class="val">Today, 2:15 PM</div>
+        </div>
+        <div class="ticket idc-stat">
+          <div class="lbl">🕒 Est. Delivery</div>
+          <div class="val">Today, 3:05 PM</div>
+        </div>
+        <div class="ticket idc-stat">
+          <div class="lbl">📍 Distance</div>
+          <div class="val">12.4 mi</div>
+        </div>
+        <div class="ticket idc-stat">
+          <div class="lbl" style="color:var(--route);">✅ Payment</div>
+          <div class="val">Paid · $24.50</div>
+        </div>
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:8px;">Verification status</div>
+      <div class="ticket" style="padding:4px 18px; margin-bottom:14px;">
+        <div class="idc-otp-row">
+          <div class="idc-otp-icon done"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="#fff" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="#fff" stroke-width="2"/></svg></div>
+          <div>
+            <div class="idc-otp-title">Pickup OTP</div>
+            <div class="idc-otp-sub done">Verified</div>
+          </div>
+          <div class="idc-otp-time">2:17 PM<br><span style="color:var(--route);">✓</span></div>
+        </div>
+        <div class="perf"></div>
+        <div class="idc-otp-row">
+          <div class="idc-otp-icon pending"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="#fff" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="#fff" stroke-width="2" opacity=".6"/></svg></div>
+          <div>
+            <div class="idc-otp-title">Delivery OTP</div>
+            <div class="idc-otp-sub pending">Pending</div>
+          </div>
+          <div class="idc-otp-time">---<br><span style="color:var(--ink-faint);">🕓</span></div>
+        </div>
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:8px;">Share this card</div>
+      <div class="ticket" style="padding:16px 18px; margin-bottom:14px;">
+        <p style="font-size:11px; color:var(--ink-soft); font-weight:600; margin:0 0 12px; line-height:1.5;">Share the tracking link with family, friends, or your team.</p>
+        <button class="btn-primary btn-cargo" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="18" cy="5" r="3" stroke="#1D2B3A" stroke-width="2"/><circle cx="6" cy="12" r="3" stroke="#1D2B3A" stroke-width="2"/><circle cx="18" cy="19" r="3" stroke="#1D2B3A" stroke-width="2"/><path d="M8.6 10.5L15.4 6.5M8.6 13.5L15.4 17.5" stroke="#1D2B3A" stroke-width="2"/></svg>
+          Share Tracking Link
+        </button>
+      </div>
+
+      <div class="eyebrow" style="margin-bottom:10px;">Delivery timeline</div>
+      <div class="map-box" style="height:130px;">
+        <svg viewBox="0 0 390 130" width="100%" height="100%">
+          <path d="M20 95 C 90 40, 150 110, 220 55 S 330 20, 365 30" stroke="#8C93A0" stroke-width="2" stroke-dasharray="6 7" fill="none" opacity=".6"/>
+          <circle cx="20" cy="95" r="6" fill="#3F7D58"/><circle cx="365" cy="30" r="7" fill="#FF7A29"/>
+        </svg>
+      </div>
+      <div class="timeline" style="margin-top:6px;">
+        <div class="t-step done"><div class="t-dot"></div><div class="t-title">Booking Created</div><div class="t-time">Today, 2:05 PM</div></div>
+        <div class="t-step done"><div class="t-dot"></div><div class="t-title">Driver Assigned</div><div class="t-time">Today, 2:07 PM</div></div>
+        <div class="t-step done"><div class="t-dot"></div><div class="t-title">Driver Arrived at Pickup</div><div class="t-time">Today, 2:15 PM</div></div>
+        <div class="t-step done"><div class="t-dot"></div><div class="t-title">Package Picked Up</div><div class="t-time">Today, 2:17 PM</div></div>
+        <div class="t-step now"><div class="t-dot"></div><div class="t-title">On the Way</div><div class="t-time">In progress</div></div>
+        <div class="t-step"><div class="t-dot"></div><div class="t-title">Delivered</div><div class="t-time">Pending</div></div>
+        <div class="t-step"><div class="t-dot"></div><div class="t-title">Feedback</div><div class="t-time">Pending</div></div>
+      </div>
+
+      <button class="btn-primary btn-outline" style="margin-top:6px;">Open Live Tracking</button>
+
+      <div class="idc-actions">
+        <div class="ticket idc-action"><div class="ic">📄</div><span>Download PDF</span></div>
+        <div class="ticket idc-action"><div class="ic">🖼️</div><span>Save to Photos</span></div>
+        <div class="ticket idc-action warn"><div class="ic">⚠️</div><span>Report Issue</span></div>
+      </div>
+
+      <div class="ari-bubble" style="margin:16px 0 4px;">
+        <svg class="ari" viewBox="0 0 62 62"><rect x="18" y="12" width="30" height="30" rx="4" fill="#FF7A29"/><circle cx="27" cy="26" r="2.4" fill="#1D2B3A"/><circle cx="39" cy="26" r="2.4" fill="#1D2B3A"/><path d="M26 33 Q33 38 40 33" stroke="#1D2B3A" stroke-width="2" fill="none" stroke-linecap="round"/><rect x="20" y="4" width="26" height="8" rx="2" fill="#1D2B3A"/></svg>
+        <div class="txt"><b>Ari is here to help</b><br>Need anything? Ask Ari or visit the Help Center.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY ORDERS -->
+  <div class="screen" id="orders">
+    <div class="status-row"><span>9:41</span><span>Orders</span></div>
+    <div class="content">
+      <div style="padding-top:14px; margin-bottom:16px;"><div class="h-block" style="font-size:20px;">My Orders</div></div>
+      <div class="tabs" style="background:var(--card); padding:5px; border-radius:12px; margin-bottom:16px; width:fit-content;">
+        <button class="active" style="background:var(--ink); color:var(--paper);">All</button>
+        <button style="background:none; color:var(--ink-soft);">Ongoing</button>
+        <button style="background:none; color:var(--ink-soft);">Completed</button>
+      </div>
+      <div class="eyebrow" style="margin-bottom:8px;">Today, May 20</div>
+      <div class="ticket" style="padding:14px 16px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between;">
+          <div><div style="font-weight:800; font-size:13px;">#AA20308845</div><div style="font-size:10.5px; color:var(--ink-faint); margin-top:2px;">123 Main St → 456 Oak Ave</div></div>
+          <div style="text-align:right;"><span class="badge delivered">Delivered</span><div class="mono" style="font-size:12px; font-weight:800; margin-top:6px;">$14.75</div></div>
+        </div>
+      </div>
+      <div class="ticket" style="padding:14px 16px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between;">
+          <div><div style="font-weight:800; font-size:13px;">#AA20308844</div><div style="font-size:10.5px; color:var(--ink-faint); margin-top:2px;">123 Main St → 456 Oak Ave</div></div>
+          <div style="text-align:right;"><span class="badge transit">Picked up</span><div class="mono" style="font-size:12px; font-weight:800; margin-top:6px;">$12.50</div></div>
+        </div>
+      </div>
+      <div class="eyebrow" style="margin:16px 0 8px;">May 18, 2025</div>
+      <div class="ticket" style="padding:14px 16px;">
+        <div style="display:flex; justify-content:space-between;">
+          <div><div style="font-weight:800; font-size:13px;">#AA20308842</div><div style="font-size:10.5px; color:var(--ink-faint); margin-top:2px;">123 Main St → 456 Oak Ave</div></div>
+          <div style="text-align:right;"><span class="badge cancelled">Cancelled</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="bottomnav">
+      <div class="navitem"><span style="font-size:16px;">🏠</span><span>Home</span></div>
+      <div class="navitem on"><span style="font-size:16px;">📍</span><span>Orders</span></div>
+      <div class="navitem"><span style="font-size:16px;">💳</span><span>Wallet</span></div>
+      <div class="navitem"><span style="font-size:16px;">👤</span><span>Profile</span></div>
+    </div>
+  </div>
+
+  <!-- WALLET -->
+  <div class="screen" id="wallet">
+    <div class="status-row"><span>9:41</span><span>Wallet</span></div>
+    <div class="content">
+      <div style="padding-top:14px; margin-bottom:16px;"><div class="h-block" style="font-size:20px;">Wallet</div></div>
+      <div class="navy-block" style="margin-bottom:18px;">
+        <div style="position:relative; z-index:2;">
+          <div class="eyebrow" style="color:#C9A05C;">Balance</div>
+          <div style="font-size:30px; font-weight:900;">$25.60</div>
+          <button class="btn-primary btn-cargo btn-sm" style="margin-top:10px;">+ Add Money</button>
+        </div>
+      </div>
+      <div class="eyebrow" style="margin-bottom:10px;">Recent transactions</div>
+      <div class="ticket" style="padding:6px 18px;">
+        <div class="list-row"><div class="ic">📦</div><div style="flex:1;"><div style="font-weight:700; font-size:12.5px;">Payment · #AA20308845</div><div style="font-size:10px; color:var(--ink-faint);">May 20, 11:18 AM</div></div><div class="mono" style="font-weight:800; color:var(--stamp);">-$14.75</div></div>
+        <div class="list-row"><div class="ic" style="background:#DEF0E3;">＋</div><div style="flex:1;"><div style="font-weight:700; font-size:12.5px;">Added money</div><div style="font-size:10px; color:var(--ink-faint);">May 19, 09:30 AM</div></div><div class="mono" style="font-weight:800; color:var(--route);">+$20.00</div></div>
+        <div class="list-row"><div class="ic">📦</div><div style="flex:1;"><div style="font-weight:700; font-size:12.5px;">Payment · #AA20308843</div><div style="font-size:10px; color:var(--ink-faint);">May 19, 3:45 PM</div></div><div class="mono" style="font-weight:800; color:var(--stamp);">-$18.20</div></div>
+      </div>
+    </div>
+    <div class="bottomnav">
+      <div class="navitem"><span style="font-size:16px;">🏠</span><span>Home</span></div>
+      <div class="navitem"><span style="font-size:16px;">📍</span><span>Orders</span></div>
+      <div class="navitem on"><span style="font-size:16px;">💳</span><span>Wallet</span></div>
+      <div class="navitem"><span style="font-size:16px;">👤</span><span>Profile</span></div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="profile">
+    <div class="status-row"><span>9:41</span><span>Profile</span></div>
+    <div class="content">
+      <div style="display:flex; align-items:center; gap:14px; padding:18px 0 20px;">
+        <div class="avatar">AK</div>
+        <div><div style="font-weight:900; font-size:16px;">Ali Khan</div><div style="font-size:11px; color:var(--ink-faint);">+1 (919) 123-4567</div></div>
+      </div>
+      <div class="ticket" style="padding:4px 18px;">
+        <div class="list-row"><div class="ic">👤</div><div style="flex:1; font-weight:700; font-size:12.5px;">Personal information</div><span>›</span></div>
+        <div class="list-row"><div class="ic">🔒</div><div style="flex:1; font-weight:700; font-size:12.5px;">Change password</div><span>›</span></div>
+        <div class="list-row"><div class="ic">🔔</div><div style="flex:1; font-weight:700; font-size:12.5px;">Notification settings</div><span>›</span></div>
+        <div class="list-row"><div class="ic">❓</div><div style="flex:1; font-weight:700; font-size:12.5px;">Help center</div><span>›</span></div>
+        <div class="list-row"><div class="ic">📜</div><div style="flex:1; font-weight:700; font-size:12.5px;">Terms & conditions</div><span>›</span></div>
+      </div>
+      <button class="btn-primary btn-outline" style="margin-top:20px; color:var(--stamp); box-shadow:inset 0 0 0 1.5px var(--stamp);">Log Out</button>
+    </div>
+    <div class="bottomnav">
+      <div class="navitem"><span style="font-size:16px;">🏠</span><span>Home</span></div>
+      <div class="navitem"><span style="font-size:16px;">📍</span><span>Orders</span></div>
+      <div class="navitem"><span style="font-size:16px;">💳</span><span>Wallet</span></div>
+      <div class="navitem on"><span style="font-size:16px;">👤</span><span>Profile</span></div>
+    </div>
+  </div>
+
+  <!-- ASK ARI — AI ASSISTANT -->
+  <div class="screen" id="ari">
+    <div class="content" style="padding:10px 0 0; display:flex; flex-direction:column; height:100%;">
+      <div style="padding:0 20px;">
+        <div class="eyebrow">AI delivery assistant</div>
+      </div>
+      <div style="flex:1; overflow-y:auto; padding:10px 20px 16px;">
+        <div class="chat-log">
+          <div class="chat-row">
+            <div class="chat-avatar"><svg class="ari-icon" viewBox="0 0 62 62"><rect x="14" y="10" width="34" height="34" rx="5" fill="#1D2B3A"/><circle cx="24" cy="26" r="2.6" fill="#F2E9D8"/><circle cx="38" cy="26" r="2.6" fill="#F2E9D8"/><path d="M23 34Q31 40 39 34" stroke="#F2E9D8" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></div>
+            <div class="chat-bubble ari">Hi, I'm Ari 👋 I can help you book a delivery, track a package, or answer questions about what you can and can't ship. What do you need?</div>
+          </div>
+          <div class="chat-row user">
+            <div class="chat-bubble user">Can I send a bottle of wine to my sister?</div>
+          </div>
+          <div class="chat-row">
+            <div class="chat-avatar"><svg class="ari-icon" viewBox="0 0 62 62"><rect x="14" y="10" width="34" height="34" rx="5" fill="#1D2B3A"/><circle cx="24" cy="26" r="2.6" fill="#F2E9D8"/><circle cx="38" cy="26" r="2.6" fill="#F2E9D8"/><path d="M23 34Q31 40 39 34" stroke="#F2E9D8" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></div>
+            <div class="chat-bubble ari">Not through Anything Anywhere — alcohol is on our prohibited items list, so I can't book that one for you. I can help you find a licensed carrier instead, or book something else. Want me to start a new order?</div>
+          </div>
+        </div>
+        <div class="chip-row">
+          <div class="chip">Track my order</div>
+          <div class="chip">What can't I ship?</div>
+          <div class="chip">Start a new booking</div>
+          <div class="chip">Talk to support</div>
+        </div>
+      </div>
+      <div class="chat-inputbar">
+        <input placeholder="Ask Ari anything...">
+        <div class="chat-send"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20L20 12L4 4L4 10L14 12L4 14L4 20Z" fill="#1D2B3A"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /stack -->
+
+  <div class="fab" id="fabAri">
+    <span class="fab-badge">AI</span>
+    <svg class="ari-icon" viewBox="0 0 62 62"><rect x="14" y="10" width="34" height="34" rx="5" fill="#1D2B3A"/><circle cx="24" cy="26" r="2.6" fill="#F2E9D8"/><circle cx="38" cy="26" r="2.6" fill="#F2E9D8"/><path d="M23 34Q31 40 39 34" stroke="#F2E9D8" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  </div><!-- /phone-inner -->
+</div>
+
+<script>
+  // Master flow order — back/forward arrows step through this sequence
+  const order = ['splash','welcome','home','category','fragile','review','pay','track','idcard',
+                  'orders','wallet','profile','ari'];
+  const titles = {
+    splash:'Splash', welcome:'Welcome', home:'Home', category:'Package Type', fragile:'Fragile & Photos',
+    review:'Review Booking', pay:'Payment', track:'Live Track', idcard:'Package ID Card', orders:'My Orders',
+    wallet:'Wallet', profile:'Profile', ari:'Ask Ari'
+  };
+  let idx = 0;
+
+  const screens = document.querySelectorAll('.screen');
+  const tabBtns = document.querySelectorAll('.tabs button[data-s]');
+  const navPageName = document.getElementById('navPageName');
+  const navBack = document.getElementById('navBack');
+  const navFwd = document.getElementById('navFwd');
+
+  function render(direction){
+    const key = order[idx];
+    screens.forEach(s=>{
+      s.classList.remove('exit-left');
+      if(s.id === key){
+        s.classList.add('active');
+      } else if(s.classList.contains('active')){
+        if(direction === 'fwd') s.classList.add('exit-left');
+        s.classList.remove('active');
+      }
+    });
+    navPageName.textContent = titles[key];
+    tabBtns.forEach(b=>b.classList.toggle('active', b.dataset.s === key));
+    navBack.classList.toggle('disabled', idx === 0);
+    navFwd.classList.toggle('disabled', idx === order.length - 1);
+    document.getElementById('fabAri').style.display = (key==='splash'||key==='welcome'||key==='ari') ? 'none' : 'flex';
+  }
+
+  function goTo(key){
+    const newIdx = order.indexOf(key);
+    if(newIdx === -1 || newIdx === idx) return;
+    const direction = newIdx > idx ? 'fwd' : 'back';
+    idx = newIdx;
+    render(direction);
+  }
+
+  tabBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=> goTo(btn.dataset.s));
+  });
+  navBack.addEventListener('click', ()=>{ if(idx>0){ idx--; render('back'); } });
+  navFwd.addEventListener('click', ()=>{ if(idx<order.length-1){ idx++; render('fwd'); } });
+
+  const fab = document.getElementById('fabAri');
+  fab.addEventListener('click', ()=> goTo('ari'));
+
+  render('fwd');
+</script>
+
+</body>
+</html>

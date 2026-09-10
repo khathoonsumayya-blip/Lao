@@ -1,0 +1,197 @@
+Simplify Customer Sign-Up + Fix Address Autocomplete
+
+Please improve ONLY the Customer App sign-up/onboarding experience. Do not change the Driver App, Admin App, delivery logic, database policies, realtime functionality, or working backend features unless required for this fix.
+
+1. Make the Customer Sign-Up Page Very Simple
+
+The current sign-up screen contains too much text and information.
+
+Redesign it to look clean, modern, spacious, and extremely easy to understand.
+
+The initial sign-up page should contain only:
+
+* Anything Anywhere logo/name
+* Short heading: Create your account
+* Full Name
+* Email
+* Mobile Number
+* Password
+* Confirm Password
+* Create Account button
+* Small link: Already have an account? Sign in
+
+Remove unnecessary explanations, large paragraphs, technical information, excessive cards, instructions, and clutter.
+
+Use a simple mobile-first layout similar to modern apps such as Uber, DoorDash, Lyft, or Instacart.
+
+The screen should feel lightweight and professional with clear spacing and large touch-friendly controls.
+
+2. Address Should NOT Be Required on the First Sign-Up Screen
+
+Do not make the customer enter their delivery address while creating the basic account.
+
+After account creation, allow them to add addresses from:
+
+Profile → Saved Addresses
+
+and when placing a delivery order.
+
+Support:
+
+* Home
+* Work
+* Other
+
+Customers must be able to save multiple addresses.
+
+3. FIX ADDRESS AUTOCOMPLETE — HIGH PRIORITY
+
+Currently, typing an address does not properly retrieve addresses from the map service.
+
+Fix the address search/autocomplete functionality everywhere addresses are entered in the Customer App.
+
+When the user starts typing an address, show real address suggestions underneath the input field.
+
+Example:
+
+User types:
+
+123 Main
+
+The app should show matching real-world addresses.
+
+When a suggestion is selected:
+
+* Fill the complete formatted address
+* Store latitude
+* Store longitude
+* Store street
+* Store city
+* Store state
+* Store ZIP/postal code
+* Store country when available
+
+Do NOT rely only on manually typed address text.
+
+4. Verify the Existing Map Provider Integration
+
+Inspect the current project before changing providers.
+
+If Google Maps Platform is already configured, correctly connect:
+
+* Places Autocomplete / Places API
+* Geocoding
+* Maps JavaScript API if required
+* Routes/Directions only where delivery routing requires it
+
+Do not expose private API keys in client-side code.
+
+Use the project’s existing secure environment/secrets architecture.
+
+If the current project uses another map provider, keep it if appropriate and repair its autocomplete/geocoding implementation rather than unnecessarily replacing it.
+
+5. Handle Map Configuration Errors Properly
+
+Check for:
+
+* Missing API key
+* Wrong environment variable
+* API key not reaching the web app
+* Places API not enabled
+* Geocoding API not enabled
+* Incorrect API restrictions
+* Referrer/domain restrictions
+* Billing/configuration problems
+* Browser console errors
+* CORS errors
+* Failed network requests
+
+Do not silently fail.
+
+If autocomplete cannot load, show a simple user-friendly fallback such as:
+
+Unable to load address suggestions. Please try again.
+
+Do not expose technical errors to customers.
+
+6. Mobile Experience
+
+Address suggestions must work properly on:
+
+* iPhone
+* Android
+* Mobile web
+* Desktop web
+
+The suggestion list should appear immediately below the address field and should be easy to tap.
+
+Do not allow the mobile keyboard or another UI layer to hide the autocomplete results.
+
+7. Delivery Address Flow
+
+For delivery orders, make the experience:
+
+Pickup Address
+→ Start typing
+→ Suggestions appear
+→ Select address
+
+Delivery Address
+→ Start typing
+→ Suggestions appear
+→ Select address
+
+Then display the selected locations correctly on the map.
+
+Use the selected coordinates for distance/routing calculations, not the raw typed text.
+
+8. Keep the UI Minimal
+
+Do not add extra text just because there is empty space.
+
+Prefer:
+
+* White/clean background
+* Simple cards only where needed
+* Large inputs
+* Clear primary button
+* Minimal text
+* Consistent typography
+* Plenty of spacing
+
+The goal is:
+
+A new customer should understand the sign-up screen within 3 seconds.
+
+9. Verify Before Finishing
+
+Test the complete flow:
+
+1. Open Customer App
+2. Open Sign Up
+3. Create a customer account
+4. Log in
+5. Add a saved address
+6. Type part of a real US address
+7. Confirm autocomplete suggestions appear
+8. Select a suggestion
+9. Confirm formatted address is populated
+10. Confirm latitude/longitude are captured
+11. Start a delivery request
+12. Test pickup address autocomplete
+13. Test destination address autocomplete
+14. Confirm both locations appear correctly on the map
+15. Confirm routing still works
+
+Do not redesign unrelated screens.
+
+Do not break existing realtime delivery, Driver App, Admin App, authentication, Supabase, order management, or payment functionality.
+
+At completion, report:
+
+* What caused address autocomplete to fail
+* What was fixed
+* Which map APIs/services are now being used
+* Which environment variables/secrets are required
+* Which screens were changed
+* The exact tests completed successfully

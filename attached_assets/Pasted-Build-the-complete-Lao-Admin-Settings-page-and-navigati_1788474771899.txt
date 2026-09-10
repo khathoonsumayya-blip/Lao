@@ -1,0 +1,580 @@
+Build the complete Lao Admin → Settings page and navigation.
+
+IMPORTANT: Do NOT modify, weaken, bypass, or replace the existing Admin authentication system. Preserve the dedicated aa_admin_session cookie, the /api/auth/session?admin=true check, Admin API authorization, logout behavior, and all existing Admin login security. Do not change the iPad password-input implementation.
+
+1. Settings navigation
+
+Add a professional Settings navigation with these sections, in this exact order:
+
+1. General
+2. Admin Users & Roles
+3. Delivery
+4. Orders
+5. Customers
+6. Drivers
+7. Merchants
+8. Payments & Fees
+9. Promotions
+10. Notifications
+11. Service Areas
+12. Business Hours
+13. Security
+14. Email
+15. Integrations
+16. System
+17. Audit Log
+
+At the bottom add a clearly separated:
+
+Danger Zone
+
+* Pause New Orders
+* Disable Driver Dispatch
+* Maintenance Mode
+
+The navigation must work properly on desktop, iPad, and mobile.
+
+Use large touch-friendly controls and do not depend on hover interactions.
+
+2. Implementation rule
+
+Do NOT create fake functionality.
+
+Every control must either:
+
+A. Be fully functional and persist its value correctly, OR
+B. Clearly display “Not configured” or “Coming soon” if the underlying Lao feature does not exist yet.
+
+Do not create buttons that appear to work but silently do nothing.
+
+Do not invent backend integrations that do not already exist.
+
+3. General
+
+Create a fully functional General settings page.
+
+Fields:
+
+* Business Name
+* App Name
+* Tagline
+* Business Email
+* Support Email
+* Support Phone
+* Business Address
+* Website
+* Default Currency
+* Country
+* Time Zone
+* Date Format
+* Distance Unit
+
+Allow administrators with sufficient permission to save changes.
+
+Use proper validation.
+
+Show:
+
+“Settings saved successfully”
+
+after a successful save.
+
+Do not expose secrets.
+
+4. Admin Users & Roles
+
+Create a functional Admin Users & Roles page using the existing Admin authentication/authorization architecture.
+
+Display:
+
+* Name
+* Email
+* Role
+* Status
+* Last Login
+* Actions
+
+Support the existing roles:
+
+* Super Admin
+* Admin
+* Dispatcher
+* Support
+
+Implement role-based permissions without weakening authentication.
+
+Permissions should cover:
+
+* Dashboard
+* Orders
+* Customers
+* Drivers
+* Merchants
+* Payments
+* Promotions
+* Reports
+* Settings
+* Security
+* Audit Logs
+
+Do not display passwords, password hashes, session tokens, cookies, or secrets.
+
+Allow authorized Super Admin users to:
+
+* Add admin user
+* Edit role
+* Disable/enable admin
+* Revoke sessions
+* Reset password through the existing secure password-reset mechanism
+
+Do not create a new authentication mechanism.
+
+5. Delivery
+
+Make functional settings for features that already exist in the backend.
+
+Include:
+
+* Base Delivery Fee
+* Per-Mile Fee
+* Minimum Delivery Fee
+* Maximum Delivery Fee
+* Free Delivery Threshold
+* Maximum Delivery Radius
+* Standard Estimated Delivery Time
+* Priority Delivery Time
+* Late Delivery Threshold
+* Automatic Driver Assignment
+
+Only connect settings to actual backend behavior if that behavior already exists.
+
+If a setting has no existing backend consumer, display it as “Not configured” rather than pretending it controls the application.
+
+6. Orders
+
+Create:
+
+* Auto-confirm Orders
+* Require Merchant Confirmation
+* Allow Customer Cancellation
+* Allow Driver Cancellation
+* Allow Merchant Cancellation
+* Automatically Assign Driver
+* Allow Scheduled Orders
+
+Cancellation settings:
+
+* Customer Cancellation Window
+* Cancellation Fee
+
+Order status display should support the application’s existing statuses.
+
+Do not introduce duplicate order-status systems.
+
+7. Customers
+
+Create a functional customer-management settings page where supported by the existing backend.
+
+Include:
+
+* Require Email Verification
+* Require Phone Verification
+* Allow Guest Checkout
+* Allow Account Deletion
+* Maximum Active Orders
+* Maximum Saved Addresses
+
+Do not expose customer passwords or password hashes.
+
+8. Drivers
+
+Include:
+
+* Require identity verification
+* Require driver’s license
+* Require vehicle information
+* Require insurance
+* Maximum pickup distance
+* Automatic assignment
+
+Only make settings functional when corresponding backend functionality exists.
+
+Otherwise clearly label them “Coming soon” or “Not configured”.
+
+9. Merchants
+
+Create the navigation and page structure now.
+
+If merchant functionality is not yet implemented, show:
+
+“Merchant settings are not configured yet.”
+
+Provide the planned configuration categories:
+
+* Merchant onboarding
+* Verification
+* Commission
+* Preparation time
+* Cancellation rules
+* Payout schedule
+
+Do not create fake backend behavior.
+
+10. Payments & Fees
+
+Create the page structure.
+
+If payment configuration already exists, display its real connection status.
+
+Never display secret API keys.
+
+Include planned settings:
+
+* Currency
+* Customer Service Fee
+* Delivery Fee
+* Merchant Commission
+* Small Order Fee
+* Tax
+* Refund Configuration
+
+If not connected:
+
+“Payment configuration is not currently connected.”
+
+Do not invent or simulate payment processing.
+
+11. Promotions
+
+Create the page structure.
+
+If promotions are not implemented, show:
+
+“Promotions are coming soon.”
+
+Do not create fake coupons.
+
+If the backend already supports promotions, then implement real:
+
+* Coupon Code
+* Discount Type
+* Discount Amount
+* Start Date
+* End Date
+* Usage Limit
+* Minimum Order
+* Maximum Discount
+
+12. Notifications
+
+Implement notification settings only where existing notification infrastructure supports them.
+
+Include categories:
+
+Customer:
+
+* Order received
+* Order confirmed
+* Preparing
+* Driver assigned
+* Picked up
+* Out for delivery
+* Delivered
+* Cancelled
+* Refund
+
+Driver:
+
+* New delivery
+* Delivery cancelled
+* Pickup reminder
+
+Merchant:
+
+* New order
+* Order cancelled
+
+Admin:
+
+* Failed payment
+* Failed delivery
+* System error
+* Security alert
+
+Do not create fake notifications.
+
+13. Service Areas
+
+Create the page structure.
+
+If geographic service-area functionality already exists, make it functional.
+
+Otherwise show:
+
+“Service area management is coming soon.”
+
+Planned structure:
+
+* State
+* City
+* ZIP Codes
+* Delivery Radius
+* Status
+
+14. Business Hours
+
+Implement:
+
+* Monday–Sunday hours
+* Open/Closed toggle
+* 24-hour option
+* Holiday closures
+* Temporary closure
+
+If the customer-facing app already consumes business-hour settings, connect them to the existing behavior.
+
+Otherwise clearly label unsupported functionality.
+
+Include:
+
+“Pause New Orders”
+
+as an operational control only if the backend already supports it.
+
+15. Security
+
+This section must be fully security-conscious.
+
+Include:
+
+* Change Admin Password
+* Session Timeout
+* Revoke All Admin Sessions
+* Active Admin Sessions
+* Login Security
+* Security Alerts
+
+Display active sessions with:
+
+* Device
+* Last Active
+* Session status
+
+Allow authorized administrators to revoke sessions.
+
+CRITICAL:
+
+Never display:
+
+* Password
+* Password hash
+* aa_admin_session value
+* aa_session value
+* Session tokens
+* API keys
+* Database credentials
+* Encryption keys
+* Resend secrets
+* Stripe secret keys
+* Environment variables
+
+Do not log sensitive credentials.
+
+Do not modify the current Admin authentication architecture.
+
+16. Email
+
+Use the existing email infrastructure.
+
+Display connection/configuration status without exposing secrets.
+
+Include:
+
+* Sender Name
+* Sender Email
+* Reply-To Email
+* Email provider status
+
+If supported by the current backend, provide:
+
+“Send Test Email”
+
+Email templates may include:
+
+* Welcome
+* Password Reset
+* Order Confirmation
+* Order Delivered
+* Cancellation
+* Refund
+
+Do not expose email-provider API keys.
+
+17. Integrations
+
+Display existing integrations and their REAL connection status.
+
+Potential categories:
+
+* Resend
+* Stripe
+* Maps
+* Authentication providers
+
+Only show an integration if it actually exists in the application.
+
+Never display secret keys.
+
+If an integration is not configured:
+
+“Not configured”
+
+Do not simulate a successful connection.
+
+18. System
+
+Display safe system information such as:
+
+* Lao application version
+* Admin application version
+* API status
+* Database connection status
+* Server status
+* Last deployment, if available
+
+Include Maintenance Mode only if supported by the backend.
+
+Do not expose internal infrastructure secrets.
+
+19. Audit Log
+
+Create a real append-only Admin audit log if the application already has an appropriate audit mechanism.
+
+Record administrative actions such as:
+
+* Settings changed
+* Admin created
+* Admin role changed
+* Admin disabled
+* Session revoked
+* Customer suspended
+* Driver status changed
+* Order administrative action
+
+Display:
+
+* Date/time
+* Admin
+* Action
+* Object
+* Result
+
+Do not record passwords, password values, session tokens, API keys, or other secrets.
+
+Normal administrators must not be able to delete audit history.
+
+20. Danger Zone
+
+Create a clearly separated Danger Zone.
+
+Controls:
+
+Pause New Orders
+
+Stops new orders only if the existing backend supports this.
+
+Disable Driver Dispatch
+
+Stops driver dispatch only if the existing backend supports this.
+
+Maintenance Mode
+
+Enables maintenance mode only if supported.
+
+Every destructive action must require confirmation.
+
+Use clear warning dialogs.
+
+Do not silently execute destructive actions.
+
+21. UI/UX
+
+Make the entire Settings experience:
+
+* Professional
+* Clean
+* Responsive
+* iPad-first
+* Mobile-friendly
+* Desktop-friendly
+* Touch-friendly
+* Accessible
+
+Use consistent:
+
+* Cards
+* Labels
+* Help text
+* Toggles
+* Dropdowns
+* Save buttons
+* Confirmation dialogs
+* Success/error messages
+
+Do not use hover-only interactions.
+
+Do not attach unnecessary touch/pointer handlers to text inputs.
+
+Do not change the existing password-input implementation.
+
+22. Data and security
+
+Before implementing anything, inspect the existing database schema, API routes, settings storage, authentication system, roles, permissions, and notification/email infrastructure.
+
+Reuse existing architecture wherever possible.
+
+Do not create duplicate tables or duplicate authentication/session systems.
+
+Settings must be persisted securely.
+
+Validate all server-side inputs.
+
+Enforce authorization on the server, not only in the frontend.
+
+Do not trust frontend role checks.
+
+Do not expose sensitive environment variables to the browser.
+
+Do not log passwords, tokens, cookies, API keys, or secrets.
+
+23. Testing
+
+After implementation:
+
+* Run all existing typechecks.
+* Run all existing API integration tests.
+* Add tests for new settings APIs where appropriate.
+* Verify unauthorized users cannot access Admin Settings APIs.
+* Verify Customer sessions cannot access Admin Settings.
+* Verify legacy shared sessions cannot unlock Admin Settings.
+* Verify Admin authentication still requires aa_admin_session.
+* Verify logout still clears/revokes Admin authentication correctly.
+* Verify settings persist after page reload.
+* Verify unauthorized roles cannot modify restricted settings.
+* Verify no secrets appear in frontend responses or logs.
+* Test responsive behavior at desktop and iPad/mobile sizes.
+
+Do NOT consider the work complete if tests are failing.
+
+24. Final implementation requirement
+
+Before finishing, give me a concise report containing:
+
+1. Which Settings sections are fully functional.
+2. Which sections are marked “Not configured” or “Coming soon”.
+3. Which database tables/settings storage were used or created.
+4. Which API endpoints were added or changed.
+5. Which tests were run and their results.
+6. Confirmation that the existing Admin authentication and iPad password-input behavior were not weakened or replaced.
+
+Do not claim a feature is functional unless it was actually implemented and tested.

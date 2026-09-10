@@ -1,0 +1,43 @@
+URGENT: Fix the Admin authentication flow. Do not modify or break the Customer App.
+
+I have two confirmed Admin App bugs:
+
+BUG 1 — Admin password field cannot receive input
+
+* Open /admin/ on mobile Safari/iPhone.
+* The Email field may accept input, but after entering the email I cannot tap/type into the Password field.
+* Inspect the actual DOM, input elements, labels, overlays, z-index, pointer-events, disabled/readOnly state, focus handlers, mobile Safari behavior, and any transparent elements covering the password input.
+* Make both Email and Password native editable inputs on mobile Safari.
+* Verify that tapping Password focuses the password input and that keyboard input is accepted.
+* Do NOT solve this by adding fake/demo credentials or bypassing authentication.
+
+BUG 2 — Admin Forgot Password redirects to Customer App
+
+* From /admin/, clicking “Forgot password?” currently takes me back to the Customer App home page.
+* This is incorrect.
+* The Admin forgot-password flow must remain inside the Admin authentication flow.
+* Create/use a dedicated Admin password-reset route, for example /admin/forgot-password and /admin/reset-password.
+* The Admin reset request must call the correct Admin password-reset API.
+* Do NOT redirect Admin users to the Customer App homepage.
+* If the existing password-reset backend is shared, preserve the existing Customer reset flow while adding the correct Admin context.
+* Make sure the reset email/link generated for an Admin returns to the Admin reset-password page, not the Customer App.
+
+IMPORTANT
+
+* Do not change the working Customer App.
+* Do not change the existing customer password-reset behavior.
+* Do not remove authentication/security checks.
+* Do not use URL parameters as an authentication bypass.
+* Test the complete Admin flow on mobile Safari at approximately 402×874:
+    1. Open /admin/
+    2. Enter email
+    3. Enter password
+    4. Confirm both fields accept keyboard input
+    5. Log in with valid Admin credentials
+    6. Log out
+    7. Click Forgot password
+    8. Confirm it stays in the Admin auth flow
+    9. Submit reset request
+    10. Confirm the reset link returns to /admin/reset-password
+* Inspect browser console/network errors and server logs before declaring the issue fixed.
+* Tell me the exact root cause of each bug and what files/routes were changed.

@@ -1,0 +1,150 @@
+Fix Driver Profile editing and Driver App navigation comprehensively.
+
+CURRENT PROBLEMS
+
+1. /driver/profile does not provide an Edit Profile option.
+2. After a Driver accepts an order, the active-delivery interface replaces or hides normal Driver navigation.
+3. The Driver cannot reach Earnings, History, Profile, available orders, or other sections while completing a delivery.
+4. Other Driver pages also behave like isolated screens and do not provide consistent access to the rest of the Driver App.
+
+Do not change Customer authentication, Admin authentication, Driver authentication, onboarding architecture, delivery verification, payment calculations, or existing approval security.
+
+PART A — PERSISTENT DRIVER NAVIGATION
+
+Create one authoritative DriverAppShell for every authenticated Driver route, including:
+
+- /driver
+- /driver/home
+- /driver/orders
+- /driver/deliveries
+- /driver/deliveries/:deliveryId
+- /driver/earnings
+- /driver/history
+- /driver/profile
+- Driver support/settings routes
+
+The shared shell must provide mobile-safe navigation to:
+
+- Home
+- Available Orders
+- Active Delivery
+- Earnings
+- History
+- Profile
+
+Requirements:
+
+- Keep bottom navigation visible on normal mobile pages.
+- Active-delivery action controls must not replace the global navigation.
+- Accepting an order must navigate inside DriverAppShell.
+- Navigating to Earnings, History, or Profile must not cancel, lose, or reset the active delivery.
+- Show a persistent “Active delivery” status/button when the Driver leaves the delivery screen.
+- Tapping it must return to the correct active delivery.
+- Back navigation must never send the Driver into Customer or Admin routes.
+- Refreshing any nested Driver URL must restore the correct Driver session and page.
+- Do not duplicate navigation separately inside every page.
+- Account/logout controls must remain accessible.
+- Handle mobile safe-area spacing so navigation does not cover delivery actions.
+
+PART B — EDIT DRIVER PROFILE
+
+Add a visible “Edit Profile” button on /driver/profile.
+
+Create a clear edit screen or drawer with sections:
+
+Personal information:
+- Full name
+- Phone number
+- Profile photo
+- Address
+- Emergency contact
+
+Vehicle information:
+- Vehicle type
+- Make
+- Model
+- Year
+- Color
+- License-plate number
+- State of registration
+
+Driver documents:
+- Driver’s license
+- Vehicle registration
+- Insurance
+- Document expiration dates
+- Current approval/rejection status
+- Replace-document action
+- Required rejection reason when applicable
+
+SECURITY AND APPROVAL RULES
+
+- A Driver may update only their own profile.
+- Validate and normalize all fields on the server.
+- Do not trust Driver IDs supplied by the browser.
+- Derive Driver identity from the authenticated session.
+- License, registration, insurance, plate, vehicle type, and identity-sensitive changes must create a review-required update.
+- Do not silently overwrite previously approved compliance records.
+- Keep the currently approved vehicle active until the replacement is approved, when legally appropriate.
+- If the previous vehicle/document is expired or invalid, prevent the Driver from going online.
+- If a Driver changes vehicles during an active delivery, save the change as pending and do not apply it to that delivery.
+- Documents must remain private and use the existing secure upload/viewing architecture.
+- Record audit entries showing old value, new value, Driver, timestamp, and approval result.
+- Email changes must use the existing secure email-verification workflow.
+- Phone changes should require verification if phone verification already exists.
+- Show clear Pending Review, Approved, Rejected, and Expired states.
+- A rejected update must display the Admin’s reason and allow resubmission.
+
+UX REQUIREMENTS
+
+- Provide Save, Cancel, loading, success, validation-error, and API-error states.
+- Warn about unsaved changes before leaving.
+- Use large mobile touch targets.
+- Preserve the approved green Lao branding.
+- Keep wording short and driver-friendly.
+- Do not expose internal IDs or private storage paths.
+
+PART C — REGRESSION TESTS
+
+Add tests proving:
+
+1. Every authenticated Driver route uses DriverAppShell.
+2. Navigation remains available after accepting an order.
+3. The Driver can open Earnings, History, and Profile during an active delivery.
+4. Returning to Active Delivery restores the same order and status.
+5. Navigation does not mutate or cancel the delivery.
+6. Direct nested-route refresh works.
+7. A Driver cannot edit another Driver’s profile.
+8. Safe profile fields update immediately.
+9. Compliance-sensitive changes enter Pending Review.
+10. Old approved compliance data is preserved until approval.
+11. Vehicle changes cannot alter an active delivery.
+12. Document access remains private.
+13. Customer and Admin routes remain isolated.
+
+VERIFICATION
+
+Run:
+
+- Driver regression tests
+- Relevant API integration tests
+- Driver typecheck
+- Driver production build
+- git diff --check
+
+Perform a real mobile browser test that:
+
+1. Signs in as an approved test Driver.
+2. Accepts an available order.
+3. Opens Earnings.
+4. Opens History.
+5. Opens Profile.
+6. Returns to the same active order.
+7. Confirms its state was preserved.
+8. Edits a safe profile field.
+9. Submits a vehicle change.
+10. Confirms that the vehicle change becomes Pending Review.
+11. Confirms the Admin can review it.
+12. Confirms no Customer or Admin navigation appears in the Driver App.
+
+Report the exact root cause, files changed, test results, and route-by-route browser evidence.

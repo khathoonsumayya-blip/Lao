@@ -1,0 +1,127 @@
+Please simplify the entire Customer App UI and make it look clean, modern, premium, and very easy to use.
+
+IMPORTANT:
+Do not change or remove the existing backend functionality, APIs, Supabase integration, realtime delivery system, driver system, admin system, payment logic, maps integration, authentication, or database structure unless required to fix a bug.
+
+The main goal is UI/UX simplification.
+
+1. Reduce text across all Customer App screens.
+
+* Remove long paragraphs and unnecessary explanations.
+* Use short headings and very short helper text.
+* Avoid repeating information.
+* Do not show technical/backend information to customers.
+* Keep important legal/safety information, but show it only at the appropriate step.
+
+2. Make the home screen extremely simple.
+    The main customer flow should be visually obvious:
+
+Pickup location
+→ Delivery location
+→ Package details
+→ Get price / Continue
+
+Use large clean input fields and clear buttons.
+
+3. Do not overload the first screen.
+    Do not display long descriptions about how Anything Anywhere works.
+
+A short line such as:
+“Fast local delivery when you need it.”
+
+is enough.
+
+4. Use progressive disclosure.
+    Only show information when the customer needs it.
+
+For example:
+
+* Prohibited items should appear before confirming the delivery.
+* Payment details should appear during checkout.
+* Driver tracking information should appear after a driver is assigned.
+* Help information should be inside Help/Support rather than permanently displayed.
+
+5. Keep each screen focused on one main task.
+
+Examples:
+
+Home:
+Pickup + destination.
+
+Package screen:
+Package type, size, weight, notes.
+
+Quote screen:
+Estimated price, ETA and Continue button.
+
+Checkout:
+Payment + prohibited-items confirmation + Place Delivery.
+
+Tracking:
+Driver, map, ETA and delivery status.
+
+6. Improve mobile usability.
+    The Customer App must work especially well on iPhone and Android.
+
+Use:
+
+* Large touch-friendly buttons
+* Comfortable spacing
+* Large readable fonts
+* Simple cards
+* Clear icons
+* Minimal scrolling
+* No tiny text
+* No crowded sections
+
+7. Keep navigation simple.
+    Recommended bottom navigation:
+
+Home | Deliveries | Support | Account
+
+Do not put Admin or Driver controls anywhere in the Customer App.
+
+8. For addresses:
+    Make Pickup and Delivery address fields easy to recognize.
+
+Use placeholders such as:
+“Pickup address”
+“Delivery address”
+
+Keep Google Maps/address autocomplete enabled and make sure selecting an autocomplete result correctly fills the address.
+
+9. Use icons where an icon can replace unnecessary text.
+
+Examples:
+Location pin = address
+Package icon = package
+Card icon = payment
+Clock = ETA
+Phone/chat = support
+
+10. Keep the Anything Anywhere branding and make the interface consistent across all Customer App pages.
+11. Before finishing, test the complete customer flow:
+
+Sign up/Login
+→ Enter pickup address
+→ Enter delivery address
+→ Select package details
+→ Get quote
+→ Confirm prohibited-items declaration
+→ Payment/checkout
+→ Create delivery
+→ Driver assignment
+→ Realtime tracking
+→ Delivery completion
+
+Fix any broken buttons, navigation issues, address autocomplete problems, missing states, or layout problems discovered during testing.
+
+Do not redesign the Driver App or Admin App as part of this task.
+
+At the end, give me a short report containing:
+
+* Pages simplified
+* Text removed/reduced
+* Bugs fixed
+* Customer flow tested
+* Anything still requiring an external API/key/configuration

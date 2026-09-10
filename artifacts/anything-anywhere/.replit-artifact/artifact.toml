@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Anything Anywhere"
+description = "A responsive customer delivery app for booking, pricing, tracking, and managing local deliveries in Raleigh, North Carolina."
+version = "1.0.0"
+id = "artifacts/anything-anywhere"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21877
+
+[services.development]
+run = "pnpm --filter @workspace/anything-anywhere run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/anything-anywhere", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/anything-anywhere/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21877"
+BASE_PATH = "/"

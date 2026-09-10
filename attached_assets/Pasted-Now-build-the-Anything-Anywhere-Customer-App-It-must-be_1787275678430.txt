@@ -1,0 +1,299 @@
+Now build the Anything Anywhere Customer App.
+
+It must be extremely simple for a first-time customer.
+
+Bottom navigation
+
+Home
+Orders
+Ari
+Wallet
+Profile
+
+Authentication
+
+Create:
+
+* Welcome
+* Sign up
+* Sign in
+* Forgot password
+* Email verification
+* Phone verification architecture
+* Sign out
+
+Support secure persistent sessions.
+
+Welcome screen
+
+Beautiful branded screen:
+
+Anything Anywhere
+
+Anything. Anywhere. Delivered.
+
+Include Ari prominently.
+
+Message:
+
+“Hi, I’m Ari 👋
+I’ll help you send your package safely, quickly and with care.”
+
+Buttons:
+
+* Get Started
+* Sign In
+
+Show:
+No Tips. Best Service.
+
+Customer Home
+
+Top:
+
+* Greeting
+* Current location
+* Ari button
+* Notifications
+
+Main card:
+
+Where should we deliver?
+
+Pickup address
+Delivery address
+
+Include:
+
+* current location
+* address autocomplete
+* saved addresses
+* recent addresses
+* map preview
+
+Customer can select:
+Personal
+Business
+
+Add Smart Contact Book.
+
+Pickup contact:
+
+* Name
+* Phone
+* Role
+* Instructions
+
+Delivery contact:
+
+* Name
+* Phone
+* Role
+* Instructions
+
+Package details
+
+Ask:
+
+“What are you sending?”
+
+Categories:
+
+* Documents
+* Food
+* Groceries
+* Medicine
+* Baby items
+* Pet items
+* Gifts
+* Electronics
+* Clothing
+* Small parcels
+* Other
+
+Allow optional package photo.
+
+Weight:
+
+* Under 5 lb
+* 5–20 lb
+* 20–50 lb
+
+Size:
+
+* Small
+* Medium
+* Large
+
+Package Care
+
+Create visually attractive selectable care cards.
+
+Standard
+Everyday items
+
+Fragile
+Handle with care
+
+Priority
+Time sensitive
+
+Temperature Sensitive
+Special handling
+
+Allow special instructions.
+
+Quote
+
+Calculate quote server-side.
+
+Show clearly:
+
+Estimated delivery time
+Distance
+Base delivery
+Distance fee
+Care fee
+Service fee
+Tax
+Discount
+Final total
+
+Prominently show:
+
+No tip required — $0.00
+
+Do not allow the customer application to choose the final price itself.
+
+Payment
+
+Stripe PaymentSheet.
+
+Support architecture for:
+
+* Cards
+* Apple Pay
+* Google Pay
+
+Show final amount before confirmation.
+
+Never store raw payment card information.
+
+Searching for driver
+
+Create a polished animated screen:
+
+“Ari is finding your delivery partner…”
+
+Allow cancellation according to cancellation rules.
+
+Driver assigned
+
+Display:
+
+* Driver photo
+* First name
+* Rating
+* Vehicle
+* License plate
+* ETA
+* Call
+* Message
+
+Protect personal information appropriately.
+
+Live tracking
+
+Real map.
+
+Show:
+Pickup
+Driver
+Destination
+
+Driver marker should update in realtime.
+
+Show delivery timeline:
+
+Driver assigned
+Driver heading to pickup
+Driver arrived
+Package picked up
+On the way
+Almost there
+Delivered
+
+Delivery security
+
+At delivery create a secure recipient verification mechanism.
+
+Prefer backend-generated short-lived delivery OTP.
+
+Display the OTP only to the appropriate customer/recipient.
+
+Driver enters OTP.
+
+Server verifies OTP.
+
+Never store or compare plain OTP insecurely.
+
+Allow future alternative:
+QR verification.
+
+Completed delivery
+
+Celebration but professional.
+
+“Delivered successfully”
+
+Show:
+Delivery ID
+Date/time
+Recipient
+Payment amount
+Verification
+No tip required
+
+Ask:
+Rate your driver
+Rate your experience
+Optional feedback
+
+Orders
+
+Tabs:
+Active
+Scheduled
+Completed
+Cancelled
+
+Each order card should be clear and tappable.
+
+Profile
+
+Personal information
+Saved addresses
+Saved contacts
+Payment methods
+Notifications
+Safety
+Help
+Privacy
+Terms
+Logout
+
+Ari
+
+Create Ari as a contextual assistant interface.
+
+For the first version Ari can use predefined helpful workflows rather than requiring an AI API.
+
+Examples:
+“Where is my package?”
+“Change delivery instructions”
+“Contact support”
+“Explain my price”
+“Cancel delivery”
+“Report a problem”
+
+Keep it useful, not gimmicky.

@@ -1,0 +1,161 @@
+Perform a full end-to-end production-readiness test of the Anything Anywhere delivery platform.
+
+IMPORTANT:
+
+* Do not reopen or modify Task #41.
+* Do not refactor working features unless a real reproducible defect is found.
+* Test the existing Customer, Driver, Admin, API, database, payments, maps, authentication, and realtime integration as one complete delivery workflow.
+
+Test this complete journey:
+
+1. CUSTOMER APP
+
+* New customer sign-up
+* Email/login authentication
+* Existing customer login/logout
+* Pickup address autocomplete using real Google Maps data
+* Destination address autocomplete
+* Valid pickup/destination coordinates
+* Delivery quote generation
+* Package details
+* Prohibited-items confirmation
+* Payment/checkout flow using test mode only
+* Delivery creation
+* Customer receives correct delivery status
+* Customer tracking page loads correctly
+
+2. DRIVER APP
+
+* Driver authentication
+* Driver sees only deliveries they are authorized to access
+* Delivery request/assignment flow
+* Accept delivery
+* Navigate through pickup workflow
+* Start live-location sharing
+* Verify real physical-device GPS publishing where the environment permits
+* Customer receives live driver-location updates
+* Verify map marker updates
+* Verify Follow Driver/recenter behavior
+* Pickup confirmation
+* Delivery-in-progress status
+* OTP/proof-of-delivery flow
+* Complete delivery
+* Stop location sharing automatically and/or through the Stop Sharing control
+
+3. CUSTOMER LIVE TRACKING
+    Verify:
+
+* Driver marker
+* Pickup marker
+* Destination marker
+* Route
+* ETA
+* Delivery status
+* Realtime updates
+* Follow Driver
+* Recenter behavior
+* Mobile responsiveness
+* No fake/sample coordinates
+* No browser-side exposure of private provider credentials
+
+After delivery completion verify:
+
+* Driver coordinates are no longer exposed.
+* Terminal route response returns no live driver location.
+* Historical location events cannot reveal the driver’s post-delivery location.
+* Customer cached tracking state is cleared appropriately.
+
+4. ADMIN APP
+    Verify:
+
+* Admin authentication and authorization
+* Customer management
+* Driver management
+* Delivery management
+* Delivery status visibility
+* Payment/status visibility
+* Support/issue-management functions that currently exist
+* Admin routes cannot be accessed by normal Customer or Driver accounts
+
+5. SECURITY AND AUTHORIZATION
+    Test that:
+
+* Customer cannot access another customer’s private delivery information.
+* Driver cannot modify an unauthorized delivery.
+* Customer cannot access Driver/Admin-only APIs.
+* Driver cannot access Admin-only functionality.
+* Unauthenticated users cannot access protected information.
+* Sensitive Supabase, Google Maps, payment, email, and backend secrets are not exposed to the browser.
+* Terminal deliveries do not expose historical driver location.
+
+6. RESPONSIVE TESTING
+    Test Customer and Driver apps at minimum on:
+
+* Mobile width around 390px
+* Tablet
+* Desktop
+
+Check for:
+
+* Horizontal overflow
+* Cut-off buttons
+* Overlapping content
+* Excessive text
+* Broken maps
+* Unusable forms
+* Poor touch targets
+
+Keep the Customer experience simple, clean, and booking-first.
+
+7. AUTOMATED VALIDATION
+    Run all existing:
+
+* API integration tests
+* Customer tests
+* Driver tests
+* Admin tests, if present
+* TypeScript checks
+* Generated API contract checks
+* Production builds
+* Database/security tests that are safe for the configured environment
+
+Do not run destructive database tests against production data.
+
+8. DEFECT HANDLING
+    If a genuine defect is found:
+
+* Document the exact reproduction steps.
+* Identify severity: BLOCKER, HIGH, MEDIUM, or LOW.
+* Fix BLOCKER/HIGH defects only when the fix is clearly scoped and safe.
+* Re-run affected tests after the fix.
+* Do not make unrelated UI or architecture changes.
+
+Do not create duplicate tasks for already completed work.
+
+FINAL REPORT
+
+Return a concise release report containing:
+
+* Customer App: PASS/FAIL
+* Driver App: PASS/FAIL
+* Admin App: PASS/FAIL
+* Authentication: PASS/FAIL
+* Google Maps/address search: PASS/FAIL
+* Quote creation: PASS/FAIL
+* Prohibited-items confirmation: PASS/FAIL
+* Payments: PASS/FAIL
+* Delivery lifecycle: PASS/FAIL
+* Live GPS tracking: PASS/FAIL
+* Terminal location privacy: PASS/FAIL
+* Realtime/SSE: PASS/FAIL
+* Authorization/security: PASS/FAIL
+* Mobile responsiveness: PASS/FAIL
+* Production builds: PASS/FAIL
+* Automated tests: passed/total
+* BLOCKER issues
+* HIGH issues
+* MEDIUM/LOW issues
+* Any tests that could not be physically verified
+* Overall verdict: READY FOR PILOT / NOT READY FOR PILOT
+
+Do not declare READY FOR PILOT if any BLOCKER or HIGH-severity issue remains unresolved.

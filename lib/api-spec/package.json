@@ -1,0 +1,13 @@
+{
+  "name": "@workspace/api-spec",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "generate": "orval --config ./orval.config.ts && node ../../scripts/normalize-generated-api.mjs",
+    "check:generated": "node ../../scripts/check-generated-api.mjs",
+    "codegen": "pnpm run generate"
+  },
+  "devDependencies": {
+    "orval": "^8.23.0"
+  }
+}

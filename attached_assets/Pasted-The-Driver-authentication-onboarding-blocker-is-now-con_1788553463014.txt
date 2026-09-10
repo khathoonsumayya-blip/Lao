@@ -1,0 +1,68 @@
+The Driver authentication/onboarding blocker is now considered fixed. Do not modify the authentication architecture or add another retry/redirect workaround.
+
+Now perform a complete end-to-end Driver App QA pass against the current build.
+
+Start from a fresh browser context and verify the Driver experience through the actual UI, not just source inspection.
+
+Test:
+
+1. /driver normalization
+2. Driver Welcome
+3. Driver login
+4. Driver registration
+5. Driver onboarding
+6. Save Progress and persistence after refresh
+7. Submit for Review validation
+8. Dashboard/Home
+9. Delivery flow
+10. Delivery Detail
+11. Earnings
+12. History
+13. Notifications
+14. Safety
+15. Profile
+16. Settings
+17. Logout
+18. Protected-route behavior after logout
+19. Browser refresh after logout
+20. Re-login and session persistence
+
+Also test the three session states:
+
+* clean/logged-out browser
+* authenticated Customer
+* authenticated Driver
+
+For every protected Driver route, verify that a Customer or logged-out session reaches Driver Welcome cleanly and does NOT produce repeated requests, redirect loops, blank screens, or permanent loading.
+
+For the authenticated Driver, verify every route renders correctly and navigation/back/refresh does not create duplicate profile requests.
+
+During QA specifically monitor:
+
+* /api/driver/profile request count
+* HTTP status
+* browser console/page errors
+* unexpected redirects
+* loading states that never resolve
+* cached Driver identity after logout
+* duplicate API requests
+* data persistence after refresh
+* broken buttons/forms
+* mobile/iPad usability
+
+Do not call a page “verified” merely because the route loads. Interact with the important controls and verify the resulting behavior.
+
+If you find a defect, fix the smallest underlying cause, then rerun the affected flow and the relevant authentication regression tests.
+
+At the end, provide:
+
+* every route tested
+* exact pass/fail result
+* defects found
+* fixes made
+* API/request anomalies
+* authentication/session results
+* persistence results
+* any remaining blockers
+
+Do not stop at /driver/onboarding. The goal is to verify the entire Driver App now that the authentication loop is fixed.

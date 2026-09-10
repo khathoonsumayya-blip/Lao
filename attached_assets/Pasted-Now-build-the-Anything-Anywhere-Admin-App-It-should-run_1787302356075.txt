@@ -1,0 +1,158 @@
+Now build the Anything Anywhere Admin App.
+
+It should run responsively on:
+
+* desktop web
+* tablet
+* mobile web/iPhone/Android where practical
+
+The dashboard should be optimized primarily for desktop and tablet operations.
+
+Require role-based admin authentication.
+
+Main navigation
+
+Dashboard
+Live Deliveries
+Orders
+Drivers
+Customers
+Payments
+Support
+Promotions
+Analytics
+Settings
+
+Dashboard
+
+Cards:
+Deliveries today
+Active deliveries
+Searching for driver
+Drivers online
+Completed today
+Cancelled
+Revenue
+Average delivery time
+
+Add useful charts.
+
+Live Operations Map
+
+Show active drivers and active deliveries.
+
+Admin can select delivery and see:
+
+* customer
+* driver
+* route
+* statuses
+* timeline
+* payment
+* package care
+* ETA
+* support issues
+
+Dispatch
+
+Admin can:
+
+* inspect unmatched deliveries
+* manually assign eligible driver where permitted
+* reassign after appropriate cancellation/failure
+* contact driver
+* contact customer
+* record intervention reason
+
+Every admin action must be logged.
+
+Drivers
+
+Pending approval
+Approved
+Suspended
+Rejected
+
+View:
+Profile
+Photo
+Vehicle
+Documents
+Ratings
+History
+Earnings
+Safety reports
+
+Admin can approve or reject documents.
+
+Customers
+
+Search customer.
+View customer-safe account information.
+View delivery history.
+Support notes.
+Refund/support actions with permission controls.
+
+Orders
+
+Powerful searchable/filterable table.
+
+Filters:
+Status
+Date
+Customer
+Driver
+Payment
+Care level
+Area
+
+Payments
+
+Show:
+Paid
+Pending
+Failed
+Refunded
+
+Stripe transaction references.
+
+Refund must happen through secure server action, not directly from browser secrets.
+
+Support
+
+Ticket queue.
+
+Priority:
+Low
+Normal
+High
+Urgent
+
+Allow:
+Assign agent
+Comment
+Resolve
+Escalate
+
+Analytics
+
+Create charts for:
+Daily deliveries
+Revenue
+Average order value
+Average delivery duration
+Cancellation rate
+Driver acceptance rate
+Customer repeat rate
+Top service areas
+
+Audit log
+
+Record sensitive admin actions:
+driver approval
+suspension
+manual assignment
+price adjustment
+refund
+account change
+order cancellation

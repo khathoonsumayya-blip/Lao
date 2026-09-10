@@ -1,0 +1,406 @@
+Perform a full end-to-end production-readiness release audit of the existing Anything Anywhere delivery platform.
+
+This is primarily a TESTING AND VERIFICATION TASK, not a feature-development task.
+
+NON-NEGOTIABLE RULES
+
+1. DO NOT reopen, modify, duplicate, reassign, or change Task #41.
+2. Task #41 is already technically complete. Treat its implementation as existing production code.
+3. Do not create another live-tracking task.
+4. Do not create duplicate tasks for work that already exists.
+5. Do not refactor working features.
+6. Do not redesign the application.
+7. Do not make unrelated UI changes.
+8. Only change production code when a genuine reproducible BLOCKER or HIGH-severity defect is discovered and the fix is clearly scoped and safe.
+9. If a defect is fixed, rerun all affected tests.
+10. Never run destructive database tests against development or production data.
+11. Use dedicated test infrastructure where available.
+12. Stripe/payment verification must use TEST MODE ONLY.
+13. Never invent GPS coordinates, map results, delivery records, test results, or PASS statuses.
+14. If something cannot be verified in this environment, mark it NOT PHYSICALLY VERIFIED rather than failing or pretending it passed.
+15. Do not stop after planning. Continue through execution, testing, verification, and the final report unless an external credential/environment requirement makes execution genuinely impossible.
+
+⸻
+
+1. CUSTOMER APP
+
+Test the complete Customer journey.
+
+Verify:
+
+* New customer sign-up
+* Email/authentication flow
+* Existing customer login
+* Logout
+* Session refresh/persistence where supported
+* Pickup-address autocomplete using real Google Maps/provider data
+* Destination-address autocomplete
+* Valid verified pickup coordinates
+* Valid verified destination coordinates
+* No invented/sample fallback coordinates
+* Delivery quote generation
+* Correct quote values returned by the API
+* Package details entry
+* Prohibited-items confirmation
+* Confirmation must actually be required before delivery creation
+* Server-side prohibited-items enforcement where implemented
+* Payment/checkout flow using Stripe TEST MODE only
+* Successful delivery creation
+* Customer receives the correct initial delivery status
+* Delivery appears in Customer Deliveries
+* Customer tracking page loads correctly
+
+Do not weaken existing validation merely to make a test pass.
+
+⸻
+
+2. DRIVER APP
+
+Verify:
+
+* Driver authentication
+* Driver authorization
+* Driver can see only deliveries they are authorized to access
+* Delivery request/assignment flow
+* Accept delivery
+* Pickup workflow
+* Start live-location sharing
+* Explicit GPS permission behavior
+* Permission-denied/retry behavior
+* Real physical-device GPS publishing where this environment permits it
+* Customer receives driver-location updates
+* Driver marker changes as new coordinates arrive
+* Follow Driver behavior
+* Recenter behavior
+* Pickup confirmation
+* Delivery-in-progress transition
+* OTP/proof-of-delivery flow
+* Complete delivery
+* Location sharing stops automatically after completion where designed
+* Stop sharing live location control works correctly
+* GPS watcher/subscription is cleaned up properly
+
+If Replit’s browser cannot provide genuine physical GPS, mark only that portion:
+
+NOT PHYSICALLY VERIFIED — physical-device GPS unavailable in current environment
+
+Do not substitute fake coordinates to obtain a PASS.
+
+⸻
+
+3. CUSTOMER LIVE TRACKING
+
+During an active delivery verify:
+
+* Driver marker
+* Pickup marker
+* Destination marker
+* Route
+* ETA
+* Delivery status
+* Realtime/SSE updates
+* Driver-location updates
+* Follow Driver
+* Recenter control
+* Stable customer map interaction
+* Mobile layout
+* No fake/sample coordinates
+* No browser-side Directions/geocoding calls that expose private provider credentials
+* No private Google Maps server credential in client bundles
+
+Inspect network responses and browser bundles where appropriate.
+
+TERMINAL-DELIVERY PRIVACY
+
+After completing the delivery verify:
+
+* Driver coordinates are no longer returned to the Customer.
+* Terminal route response contains no live driver location.
+* Historical SSE/location-event replay cannot reveal driver coordinates after delivery completion.
+* Customer cached tracking state is cleared correctly.
+* Old driver marker/location is not retained after terminal state.
+* Refreshing the completed delivery does not restore historical driver coordinates.
+
+This is a security/privacy requirement.
+
+⸻
+
+4. ADMIN APP
+
+Verify the existing Admin application without adding new features.
+
+Test:
+
+* Admin authentication
+* Admin authorization
+* Customer management functionality that currently exists
+* Driver management functionality that currently exists
+* Delivery management
+* Delivery-status visibility
+* Payment/status visibility
+* Existing support/issue-management features
+* Existing dashboard/navigation functionality
+* Admin routes reject Customer accounts
+* Admin routes reject Driver accounts
+* Unauthenticated users cannot access Admin data
+
+Do not mark missing features as defects unless the repository indicates they are already intended/implemented functionality.
+
+⸻
+
+5. SECURITY AND AUTHORIZATION
+
+Perform safe authorization-negative tests.
+
+Verify:
+
+* Customer A cannot access Customer B’s private delivery information.
+* Customer cannot modify another customer’s delivery.
+* Driver cannot read or modify a delivery they are not authorized to access.
+* Customer cannot call Driver-only APIs successfully.
+* Customer cannot call Admin-only APIs successfully.
+* Driver cannot call Admin-only APIs successfully.
+* Unauthenticated callers cannot access protected delivery information.
+* Protected write endpoints enforce authentication and authorization server-side.
+* Terminal deliveries do not expose historical driver location.
+
+Inspect browser-facing configuration/build output for accidental secret exposure.
+
+Ensure private secrets are NOT bundled into browser code, including:
+
+* Supabase service-role/secret keys
+* private Google Maps server credentials
+* Stripe secret keys
+* Resend/email secret keys
+* database credentials
+* backend signing secrets
+* other server-only environment variables
+
+Browser-safe/public keys are not automatically defects; distinguish publishable/public credentials from private secrets correctly.
+
+⸻
+
+6. RESPONSIVE TESTING
+
+Test Customer and Driver apps at minimum at:
+
+Mobile
+
+Approximately 390px width
+
+Tablet
+
+Approximately 768px width
+
+Desktop
+
+Approximately 1280px or wider
+
+Check:
+
+* Horizontal overflow
+* Cut-off buttons
+* Overlapping content
+* Broken navigation
+* Excessive customer-facing text
+* Broken maps
+* Unusable forms
+* Small/poor touch targets
+* Modal overflow
+* Checkout layout
+* Tracking layout
+* Address autocomplete layout
+
+Keep the existing Customer experience simple, clean, booking-first, and user-friendly.
+
+Do not redesign working pages during this audit.
+
+⸻
+
+7. AUTOMATED VALIDATION
+
+Identify the repository’s existing test/build commands first.
+
+Then run all applicable existing:
+
+* API integration tests
+* Customer tests
+* Driver tests
+* Admin tests, if present
+* Authentication tests
+* Authorization tests
+* Realtime/SSE tests
+* Maps/geocoding tests
+* Quote tests
+* Payment integration tests that safely use test mode
+* Database/security tests safe for the configured test environment
+* TypeScript/type checks
+* Generated API contract validation
+* Customer production build
+* Driver production build
+* Admin production build
+* Backend/API production build where applicable
+
+Do not silently skip failed commands.
+
+For each test suite record:
+
+passed / total
+
+If a test suite does not exist, say:
+
+NOT PRESENT
+
+Do not count nonexistent tests as PASS.
+
+⸻
+
+8. DATABASE SAFETY
+
+Before running database/security tests determine which database is configured.
+
+Do not perform schema-destructive, RLS-destructive, reset, truncate, fixture replacement, or migration-destructive tests against:
+
+* production
+* real customer data
+* shared development databases
+
+Only run destructive security fixtures against a clearly identified dedicated disposable test database.
+
+If the safe database cannot be established, skip destructive tests and report:
+
+NOT RUN — safe disposable test database not confirmed
+
+⸻
+
+9. DEFECT HANDLING
+
+For every genuine defect provide:
+
+Reproduction
+
+Exact steps to reproduce.
+
+Expected result
+
+What should happen.
+
+Actual result
+
+What happened.
+
+Severity
+
+Use only:
+
+* BLOCKER
+* HIGH
+* MEDIUM
+* LOW
+
+Fixing policy
+
+Automatically fix only BLOCKER/HIGH issues when:
+
+* the issue is reproducible,
+* the root cause is understood,
+* the fix is small and clearly scoped,
+* existing architecture does not need to be redesigned.
+
+After the fix:
+
+1. Run the specific failing test.
+2. Run related regression tests.
+3. Run type checks.
+4. Run relevant production build.
+5. Re-run relevant E2E workflow.
+
+For MEDIUM/LOW issues, document them unless an extremely small safe fix is necessary to complete an otherwise broken workflow.
+
+Do not use this audit as an excuse for refactoring.
+
+⸻
+
+10. TASK MANAGEMENT
+
+This audit must NOT:
+
+* reopen Task #41
+* modify Task #41
+* duplicate Task #41
+* create another live-tracking task
+* change Task #41’s completion documentation
+* retry Task #41 completion
+* create duplicate tasks for already completed functionality
+
+If the task-management subsystem reports stale ownership or no_active_task, document the administrative condition only.
+
+Do not let task-management bookkeeping prevent the technical release audit from completing.
+
+⸻
+
+REQUIRED FINAL REPORT
+
+Finish with ONE concise report using exactly this structure:
+
+Anything Anywhere — Production Readiness Report
+
+Customer App: PASS / FAIL
+Driver App: PASS / FAIL
+Admin App: PASS / FAIL
+Authentication: PASS / FAIL
+Google Maps/address search: PASS / FAIL
+Quote creation: PASS / FAIL
+Prohibited-items confirmation: PASS / FAIL
+Payments: PASS / FAIL
+Delivery lifecycle: PASS / FAIL
+Live GPS tracking: PASS / FAIL / NOT PHYSICALLY VERIFIED
+Terminal location privacy: PASS / FAIL
+Realtime/SSE: PASS / FAIL
+Authorization/security: PASS / FAIL
+Mobile responsiveness: PASS / FAIL
+Production builds: PASS / FAIL
+
+Automated tests: X/Y passed
+
+BLOCKER issues
+
+List them or write None.
+
+HIGH issues
+
+List them or write None.
+
+MEDIUM/LOW issues
+
+List concise reproducible findings.
+
+Tests not physically verified
+
+List only tests that genuinely could not be performed in the current environment.
+
+Code changes made
+
+List exact files/areas changed and why, or write:
+
+None — verification only.
+
+Overall verdict
+
+Return exactly one:
+
+READY FOR PILOT
+
+or
+
+NOT READY FOR PILOT
+
+RELEASE RULE
+
+Do NOT declare READY FOR PILOT if any unresolved BLOCKER or HIGH issue remains.
+
+A test that cannot be physically verified because of Replit environment limitations does not automatically create a BLOCKER, but it must be explicitly disclosed in the report.
+
+Do not finish with a plan or say what you intend to test.
+
+Actually execute the audit and return the completed report.
