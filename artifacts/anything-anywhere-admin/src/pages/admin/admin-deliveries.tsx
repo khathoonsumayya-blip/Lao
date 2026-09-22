@@ -1,11 +1,8 @@
 import {
   useListAdminDeliveries,
-  useListApprovedDrivers,
   useGetAdminDashboard,
-  useAssignDeliveryDriver,
   useUpdateAdminDeliveryStatus,
   getListAdminDeliveriesQueryKey,
-  getListApprovedDriversQueryKey,
   getGetAdminDashboardQueryKey,
 } from '@workspace/api-client-react';
 import type { DeliveryStatusUpdateStatus } from '@workspace/api-client-react';
@@ -27,15 +24,6 @@ export function AdminDeliveries() {
     { query: { queryKey: getListAdminDeliveriesQueryKey({ sort: 'recently_changed' }), retry: false } },
   );
   const {
-    data: drivers = [],
-    isLoading: isLoadingDrivers,
-    isError: isDriversError,
-    error: driversError,
-    refetch: refetchDrivers,
-  } = useListApprovedDrivers({
-    query: { queryKey: getListApprovedDriversQueryKey(), retry: false },
-  });
-  const {
     data: summary,
     isError: isSummaryError,
     error: summaryError,
@@ -43,10 +31,8 @@ export function AdminDeliveries() {
   } = useGetAdminDashboard({
     query: { queryKey: getGetAdminDashboardQueryKey(), retry: false },
   });
-  const assign = useAssignDeliveryDriver();
   const update = useUpdateAdminDeliveryStatus();
 
-  const [driverId, setDriverId] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Record<string, string>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshLock = useRef(false);
@@ -56,7 +42,6 @@ export function AdminDeliveries() {
   const deliveryList = deliveries ?? [];
   const retainedDataError =
     (isError && deliveries ? deliveriesError : null)
-    ?? (isDriversError && deliveries ? driversError : null)
     ?? (isSummaryError && summary ? summaryError : null);
   const visibleRefreshError = refreshError
     ?? (retainedDataError instanceof Error ? retainedDataError.message : retainedDataError ? 'Could not refresh delivery data.' : null);
@@ -75,39 +60,24 @@ export function AdminDeliveries() {
     };
 
     try {
-      const [deliveriesResult, driversResult, summaryResult] = await Promise.all([
+      const [deliveriesResult, summaryResult] = await Promise.all([
         refetchDeliveries(),
-        refetchDrivers(),
         refetchSummary(),
       ]);
 
-      if (deliveriesResult.isError || driversResult.isError || summaryResult.isError) {
-        throw deliveriesResult.error ?? driversResult.error ?? summaryResult.error ?? new Error('Could not refresh delivery data.');
+      if (deliveriesResult.isError || summaryResult.isError) {
+        throw deliveriesResult.error ?? summaryResult.error ?? new Error('Could not refresh delivery data.');
       }
 
       await keepProgressVisible();
       setLastRefreshed(new Date());
     } catch (error) {
       await keepProgressVisible();
-      setRefreshError(error instanceof Error ? error.message : 'Could not refresh deliveries and drivers. Please try again.');
+      setRefreshError(error instanceof Error ? error.message : 'Could not refresh deliveries. Please try again.');
     } finally {
       refreshLock.current = false;
       if (refreshButtonRef.current) refreshButtonRef.current.disabled = false;
       setIsRefreshing(false);
-    }
-  };
-
-  const handleAssign = async (deliveryId: string) => {
-    const selectedDriver = driverId[deliveryId];
-    if (!selectedDriver) {
-      alert('Please select a driver to assign.');
-      return;
-    }
-    try {
-      await assign.mutateAsync({ id: deliveryId, data: { driverId: selectedDriver } });
-      await handleRefresh();
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'This delivery could not be updated.');
     }
   };
 
@@ -127,7 +97,6 @@ export function AdminDeliveries() {
     { value: 'draft', label: 'Draft' },
     { value: 'quoted', label: 'Quoted' },
     { value: 'searching_driver', label: 'Searching Driver' },
-    { value: 'driver_assigned', label: 'Driver Assigned' },
     { value: 'driver_en_route_pickup', label: 'En Route to Pickup' },
     { value: 'driver_arrived_pickup', label: 'Arrived at Pickup' },
     { value: 'pickup_verified', label: 'Pickup Verified' },
@@ -151,7 +120,7 @@ export function AdminDeliveries() {
           <button
             ref={refreshButtonRef}
             onClick={handleRefresh}
-            disabled={isRefreshing || assign.isPending || update.isPending}
+            disabled={isRefreshing || update.isPending}
             aria-busy={isRefreshing}
             className="flex items-center gap-2 rounded-lg border bg-[hsl(var(--card))] px-4 py-2 text-sm font-semibold hover:bg-[hsl(var(--muted))] disabled:opacity-50"
           >
@@ -248,36 +217,6 @@ export function AdminDeliveries() {
                     </div>
 
                     <div className="flex shrink-0 flex-col gap-3 rounded-xl border bg-[hsl(var(--background))] p-4 lg:w-72">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Assign Driver</label>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <select
-                              aria-label={`Assign a driver to ${delivery.orderNumber}`}
-                              value={driverId[delivery.id] ?? ''}
-                              onChange={(event) => setDriverId({ ...driverId, [delivery.id]: event.target.value })}
-                              disabled={isLoadingDrivers || assign.isPending}
-                              className="w-full appearance-none rounded-lg border bg-[hsl(var(--card))] py-1.5 pl-3 pr-8 text-sm outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] disabled:opacity-50"
-                            >
-                              <option value="">Choose driver</option>
-                              {drivers
-                                .filter((driver) => driver.availabilityStatus === 'online')
-                                .map((driver) => (
-                                  <option key={driver.id} value={driver.id}>{driver.name} (Online)</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-[hsl(var(--muted-foreground))]" />
-                          </div>
-                          <button
-                            disabled={!driverId[delivery.id] || assign.isPending}
-                            onClick={() => handleAssign(delivery.id)}
-                            className="flex items-center justify-center rounded-lg bg-[hsl(var(--primary))] px-3 py-1.5 text-xs font-bold text-[hsl(var(--primary-foreground))] shadow-sm disabled:opacity-50"
-                          >
-                            Assign
-                          </button>
-                        </div>
-                      </div>
-
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Update Status</label>
                         <div className="flex gap-2">

@@ -1562,7 +1562,7 @@ test("expired current compliance blocks new offers, acceptance, and dispatch ass
   const dispatch = await request(`/api/admin/deliveries/${offerId}/assign`, {
     method: "POST", headers: bearer(dispatcher), body: JSON.stringify({ driverId: driverFixture.driverId }),
   });
-  assert.equal(dispatch.status, 400);
+  assert.equal(dispatch.status, 403);
   const [delivery] = await db.select().from(deliveriesTable).where(eq(deliveriesTable.publicDeliveryId, offerId));
   assert.equal(delivery.driverId, null, "future-work denial must not mutate delivery assignment");
   assert.equal(delivery.deliveryStatus, "searching_driver");
@@ -3071,7 +3071,7 @@ test("materializes only one alert per dispatcher when delayed routes are checked
   assert.equal(notifications.length, 1);
 });
 
-test("assigns an approved driver and blocks every other driver from the delivery", async () => {
+test("staff cannot assign drivers; only the accepting driver may update a delivery", async () => {
   await seedCurrentComplianceDocuments(assignedDriverId, unassignedDriverId);
   await db
     .update(deliveriesTable)
@@ -3086,20 +3086,23 @@ test("assigns an approved driver and blocks every other driver from the delivery
     headers: bearer(dispatcher),
     body: JSON.stringify({ driverId: unassignedDriverId }),
   });
-  assert.equal(unavailableAssignment.status, 400);
-  assert.match((unavailableAssignment.body as { error: string }).error, /not currently available/i);
+  assert.equal(unavailableAssignment.status, 403);
+  assert.match((unavailableAssignment.body as { error: string }).error, /driver acceptance/i);
 
   const assignResponse = await request(`/api/admin/deliveries/${createdDeliveryId}/assign`, {
     method: "POST",
     headers: bearer(dispatcher),
     body: JSON.stringify({ driverId: assignedDriverId }),
   });
-  assert.equal(assignResponse.status, 200, JSON.stringify(assignResponse.body));
-  assert.equal((assignResponse.body as { status: string }).status, "driver_assigned");
-  assert.equal(typeof (assignResponse.body as { updatedAt: unknown }).updatedAt, "string");
-  assert.equal("total" in (assignResponse.body as Record<string, unknown>), false);
-  assert.equal("recipientPhone" in (assignResponse.body as Record<string, unknown>), false);
-  assert.equal("driverRating" in (assignResponse.body as Record<string, unknown>), false);
+  assert.equal(assignResponse.status, 403, JSON.stringify(assignResponse.body));
+  const [unassigned] = await db.select({ driverId: deliveriesTable.driverId, deliveryStatus: deliveriesTable.deliveryStatus })
+    .from(deliveriesTable).where(eq(deliveriesTable.publicDeliveryId, createdDeliveryId)).limit(1);
+  assert.equal(unassigned?.driverId, null);
+  assert.equal(unassigned?.deliveryStatus, "searching_driver");
+
+  // Seed the assigned state for the existing driver access and active route coverage below.
+  await db.update(deliveriesTable).set({ driverId: assignedDriverId, deliveryStatus: "driver_assigned" })
+    .where(eq(deliveriesTable.publicDeliveryId, createdDeliveryId));
 
   const otherDriverList = await request("/api/driver/deliveries", {
     headers: bearer(unassignedDriver),

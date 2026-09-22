@@ -5,9 +5,6 @@ import {
   DeclineDriverDeliveryParams,
   DeclineDriverDeliveryResponse,
   AcceptDriverDeliveryResponse,
-  AssignDeliveryDriverBody,
-  AssignDeliveryDriverParams,
-  AssignDeliveryDriverResponse,
   AttachDeliveryPhotoBody,
   AttachDeliveryPhotoParams,
   AttachDeliveryPhotoResponse,
@@ -111,7 +108,6 @@ import {
 } from "@workspace/db";
 import { currentAuth, requireAdminRoles, requireRoles, type AuthContext } from "../lib/auth";
 import {
-  assignDelivery,
   acknowledgeDispatchAlert,
   customerDelivery,
   customerRecipientVerification,
@@ -1443,20 +1439,7 @@ router.get("/admin/drivers", requireAdminRoles("admin", "dispatcher"), async (_r
   res.json(ListApprovedDriversResponse.parse(await listApprovedDrivers()));
 });
 router.post("/admin/deliveries/:id/assign", requireAdminRoles("admin", "dispatcher"), async (req, res): Promise<void> => {
-  const params = AssignDeliveryDriverParams.safeParse(req.params);
-  const body = AssignDeliveryDriverBody.safeParse(req.body);
-  if (!params.success || !body.success) { res.status(400).json({ error: "Please provide a valid driver assignment." }); return; }
-  try {
-    const assigned = await assignDelivery(params.data.id, body.data.driverId, currentAuth(res).profileId);
-    if (!assigned) { res.status(404).json({ error: "That delivery was not found." }); return; }
-    res.json(AssignDeliveryDriverResponse.parse({
-      id: assigned.publicDeliveryId,
-      status: assigned.deliveryStatus,
-      updatedAt: assigned.updatedAt.toISOString(),
-    }));
-  } catch (error) {
-    res.status(error instanceof DeliveryConflictError ? 409 : 400).json({ error: error instanceof Error ? error.message : "Invalid assignment." });
-  }
+  res.status(403).json({ error: "Driver acceptance is required to assign a delivery." });
 });
 router.post("/admin/deliveries/:id/status", requireAdminRoles("admin", "dispatcher"), async (req, res): Promise<void> => {
   const params = UpdateAdminDeliveryStatusParams.safeParse(req.params);

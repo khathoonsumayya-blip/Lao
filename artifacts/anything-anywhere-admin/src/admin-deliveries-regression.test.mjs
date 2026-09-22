@@ -4,11 +4,10 @@ import test from 'node:test';
 
 const source = await readFile(new URL('./pages/admin/admin-deliveries.tsx', import.meta.url), 'utf8');
 
-test('Admin Deliveries uses required hooks', () => {
+test('Admin Deliveries keeps monitoring and status controls without staff assignment', () => {
   assert.match(source, /useListAdminDeliveries\(/);
-  assert.match(source, /useListApprovedDrivers\(/);
-  assert.match(source, /useAssignDeliveryDriver\(/);
   assert.match(source, /useUpdateAdminDeliveryStatus\(/);
+  assert.doesNotMatch(source, /useAssignDeliveryDriver|Assign Driver|handleAssign/);
 });
 
 test('Admin Deliveries has explicit loading/error feedback', () => {
@@ -25,13 +24,12 @@ test('Admin Deliveries removes provider-controlled status options', () => {
   assert.doesNotMatch(source, /value: 'refunded'/);
 });
 
-test('Admin Deliveries refreshes deliveries, approved drivers, and summary atomically', () => {
+test('Admin Deliveries refreshes deliveries and summary together', () => {
   assert.match(source, /refetch:\s*refetchDeliveries/);
-  assert.match(source, /refetch:\s*refetchDrivers/);
   assert.match(source, /useGetAdminDashboard/);
   assert.match(source, /refetch:\s*refetchSummary/);
   assert.match(source, /const handleRefresh = async \(\) =>/);
-  assert.match(source, /await Promise\.all\(\[\s*refetchDeliveries\(\),\s*refetchDrivers\(\),\s*refetchSummary\(\),\s*\]\)/s);
+  assert.match(source, /await Promise\.all\(\[\s*refetchDeliveries\(\),\s*refetchSummary\(\),\s*\]\)/s);
   assert.doesNotMatch(source, /onClick=\{\(\) => refetch\(\)\}/);
 });
 
@@ -51,19 +49,16 @@ test('Admin Deliveries exposes refresh progress, success, and non-destructive fa
   assert.match(source, /role="alert"/);
   assert.match(source, /Refresh failed:/);
   assert.match(source, /const visibleRefreshError = refreshError/);
-  assert.match(source, /isDriversError && deliveries/);
   assert.match(source, /isSummaryError && summary/);
 });
 
 test('Admin Deliveries requests the latest changed deliveries', () => {
   assert.match(source, /useListAdminDeliveries\([\s\S]*?\{ sort: 'recently_changed' \}/);
   assert.match(source, /getListAdminDeliveriesQueryKey\(\{ sort: 'recently_changed' \}\), retry: false/);
-  assert.match(source, /getListApprovedDriversQueryKey\(\), retry: false/);
   assert.match(source, /getGetAdminDashboardQueryKey\(\), retry: false/);
 });
 
 test('Admin Deliveries mutation refreshes retain both affected datasets', () => {
-  assert.match(source, /await assign\.mutateAsync[\s\S]*?await handleRefresh\(\)/);
   assert.match(source, /await update\.mutateAsync[\s\S]*?await handleRefresh\(\)/);
   assert.match(source, /isError && !deliveries/);
 });

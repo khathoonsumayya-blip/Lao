@@ -58,6 +58,7 @@ export default function Home() {
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'route' | 'offers'>('route');
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   useEffect(() => {
     setActiveTab(location === '/orders' || location === '/available-deliveries' ? 'offers' : 'route');
@@ -234,13 +235,15 @@ export default function Home() {
 
   const toggleAvailability = () => {
     const newStatus = isOnline ? 'offline' : 'online';
+    setAvailabilityError(null);
     updateAvailability.mutate({ data: { availabilityStatus: newStatus } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetDriverProfileQueryKey() });
         if (newStatus === 'offline') {
           queryClient.setQueryData(getListDriverOffersQueryKey(), []);
         }
-      }
+      },
+      onError: (error) => setAvailabilityError(error instanceof Error ? error.message : 'Could not change availability. Please try again.'),
     });
   };
 
@@ -322,6 +325,7 @@ export default function Home() {
       </div>
 
       <div className="px-4">
+        {availabilityError && <p role="alert" className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{availabilityError}</p>}
         {isOnline && locationError && (
           <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
             <div className="flex items-start gap-3">
@@ -413,6 +417,7 @@ export default function Home() {
                 </p>
                 <button
                   onClick={toggleAvailability}
+                  disabled={updateAvailability.isPending}
                   className="driver-btn driver-btn-primary"
                 >
                   Go Online
