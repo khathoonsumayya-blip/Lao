@@ -1,0 +1,372 @@
+From b1b527c7d707a7ff7ff612188fec045831b175c3 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 23 Sep 2026 01:25:19 +0200
+Subject: [PATCH] Restrict delivery assignment to driver acceptance
+
+---
+ .../src/admin-deliveries-regression.test.mjs  | 13 ++--
+ .../src/pages/admin/admin-deliveries.tsx      | 71 ++-----------------
+ .../src/pages/home.tsx                        |  7 +-
+ artifacts/api-server/src/routes/deliveries.ts | 21 +-----
+ .../api-server/test/api.integration.test.ts   | 23 +++---
+ 5 files changed, 30 insertions(+), 105 deletions(-)
+
+diff --git a/artifacts/anything-anywhere-admin/src/admin-deliveries-regression.test.mjs b/artifacts/anything-anywhere-admin/src/admin-deliveries-regression.test.mjs
+index d8c6877..875640d 100644
+--- a/artifacts/anything-anywhere-admin/src/admin-deliveries-regression.test.mjs
++++ b/artifacts/anything-anywhere-admin/src/admin-deliveries-regression.test.mjs
+@@ -4,11 +4,10 @@ import test from 'node:test';
+ 
+ const source = await readFile(new URL('./pages/admin/admin-deliveries.tsx', import.meta.url), 'utf8');
+ 
+-test('Admin Deliveries uses required hooks', () => {
++test('Admin Deliveries keeps monitoring and status controls without staff assignment', () => {
+   assert.match(source, /useListAdminDeliveries\(/);
+-  assert.match(source, /useListApprovedDrivers\(/);
+-  assert.match(source, /useAssignDeliveryDriver\(/);
+   assert.match(source, /useUpdateAdminDeliveryStatus\(/);
++  assert.doesNotMatch(source, /useAssignDeliveryDriver|Assign Driver|handleAssign/);
+ });
+ 
+ test('Admin Deliveries has explicit loading/error feedback', () => {
+@@ -25,13 +24,12 @@ test('Admin Deliveries removes provider-controlled status options', () => {
+   assert.doesNotMatch(source, /value: 'refunded'/);
+ });
+ 
+-test('Admin Deliveries refreshes deliveries, approved drivers, and summary atomically', () => {
++test('Admin Deliveries refreshes deliveries and summary together', () => {
+   assert.match(source, /refetch:\s*refetchDeliveries/);
+-  assert.match(source, /refetch:\s*refetchDrivers/);
+   assert.match(source, /useGetAdminDashboard/);
+   assert.match(source, /refetch:\s*refetchSummary/);
+   assert.match(source, /const handleRefresh = async \(\) =>/);
+-  assert.match(source, /await Promise\.all\(\[\s*refetchDeliveries\(\),\s*refetchDrivers\(\),\s*refetchSummary\(\),\s*\]\)/s);
++  assert.match(source, /await Promise\.all\(\[\s*refetchDeliveries\(\),\s*refetchSummary\(\),\s*\]\)/s);
+   assert.doesNotMatch(source, /onClick=\{\(\) => refetch\(\)\}/);
+ });
+ 
+@@ -51,19 +49,16 @@ test('Admin Deliveries exposes refresh progress, success, and non-destructive fa
+   assert.match(source, /role="alert"/);
+   assert.match(source, /Refresh failed:/);
+   assert.match(source, /const visibleRefreshError = refreshError/);
+-  assert.match(source, /isDriversError && deliveries/);
+   assert.match(source, /isSummaryError && summary/);
+ });
+ 
+ test('Admin Deliveries requests the latest changed deliveries', () => {
+   assert.match(source, /useListAdminDeliveries\([\s\S]*?\{ sort: 'recently_changed' \}/);
+   assert.match(source, /getListAdminDeliveriesQueryKey\(\{ sort: 'recently_changed' \}\), retry: false/);
+-  assert.match(source, /getListApprovedDriversQueryKey\(\), retry: false/);
+   assert.match(source, /getGetAdminDashboardQueryKey\(\), retry: false/);
+ });
+ 
+ test('Admin Deliveries mutation refreshes retain both affected datasets', () => {
+-  assert.match(source, /await assign\.mutateAsync[\s\S]*?await handleRefresh\(\)/);
+   assert.match(source, /await update\.mutateAsync[\s\S]*?await handleRefresh\(\)/);
+   assert.match(source, /isError && !deliveries/);
+ });
+diff --git a/artifacts/anything-anywhere-admin/src/pages/admin/admin-deliveries.tsx b/artifacts/anything-anywhere-admin/src/pages/admin/admin-deliveries.tsx
+index cc712a8..0c236be 100644
+--- a/artifacts/anything-anywhere-admin/src/pages/admin/admin-deliveries.tsx
++++ b/artifacts/anything-anywhere-admin/src/pages/admin/admin-deliveries.tsx
+@@ -1,11 +1,8 @@
+ import {
+   useListAdminDeliveries,
+-  useListApprovedDrivers,
+   useGetAdminDashboard,
+-  useAssignDeliveryDriver,
+   useUpdateAdminDeliveryStatus,
+   getListAdminDeliveriesQueryKey,
+-  getListApprovedDriversQueryKey,
+   getGetAdminDashboardQueryKey,
+ } from '@workspace/api-client-react';
+ import type { DeliveryStatusUpdateStatus } from '@workspace/api-client-react';
+@@ -26,15 +23,6 @@ export function AdminDeliveries() {
+     { sort: 'recently_changed' },
+     { query: { queryKey: getListAdminDeliveriesQueryKey({ sort: 'recently_changed' }), retry: false } },
+   );
+-  const {
+-    data: drivers = [],
+-    isLoading: isLoadingDrivers,
+-    isError: isDriversError,
+-    error: driversError,
+-    refetch: refetchDrivers,
+-  } = useListApprovedDrivers({
+-    query: { queryKey: getListApprovedDriversQueryKey(), retry: false },
+-  });
+   const {
+     data: summary,
+     isError: isSummaryError,
+@@ -43,10 +31,8 @@ export function AdminDeliveries() {
+   } = useGetAdminDashboard({
+     query: { queryKey: getGetAdminDashboardQueryKey(), retry: false },
+   });
+-  const assign = useAssignDeliveryDriver();
+   const update = useUpdateAdminDeliveryStatus();
+ 
+-  const [driverId, setDriverId] = useState<Record<string, string>>({});
+   const [status, setStatus] = useState<Record<string, string>>({});
+   const [isRefreshing, setIsRefreshing] = useState(false);
+   const refreshLock = useRef(false);
+@@ -56,7 +42,6 @@ export function AdminDeliveries() {
+   const deliveryList = deliveries ?? [];
+   const retainedDataError =
+     (isError && deliveries ? deliveriesError : null)
+-    ?? (isDriversError && deliveries ? driversError : null)
+     ?? (isSummaryError && summary ? summaryError : null);
+   const visibleRefreshError = refreshError
+     ?? (retainedDataError instanceof Error ? retainedDataError.message : retainedDataError ? 'Could not refresh delivery data.' : null);
+@@ -75,21 +60,20 @@ export function AdminDeliveries() {
+     };
+ 
+     try {
+-      const [deliveriesResult, driversResult, summaryResult] = await Promise.all([
++      const [deliveriesResult, summaryResult] = await Promise.all([
+         refetchDeliveries(),
+-        refetchDrivers(),
+         refetchSummary(),
+       ]);
+ 
+-      if (deliveriesResult.isError || driversResult.isError || summaryResult.isError) {
+-        throw deliveriesResult.error ?? driversResult.error ?? summaryResult.error ?? new Error('Could not refresh delivery data.');
++      if (deliveriesResult.isError || summaryResult.isError) {
++        throw deliveriesResult.error ?? summaryResult.error ?? new Error('Could not refresh delivery data.');
+       }
+ 
+       await keepProgressVisible();
+       setLastRefreshed(new Date());
+     } catch (error) {
+       await keepProgressVisible();
+-      setRefreshError(error instanceof Error ? error.message : 'Could not refresh deliveries and drivers. Please try again.');
++      setRefreshError(error instanceof Error ? error.message : 'Could not refresh deliveries. Please try again.');
+     } finally {
+       refreshLock.current = false;
+       if (refreshButtonRef.current) refreshButtonRef.current.disabled = false;
+@@ -97,20 +81,6 @@ export function AdminDeliveries() {
+     }
+   };
+ 
+-  const handleAssign = async (deliveryId: string) => {
+-    const selectedDriver = driverId[deliveryId];
+-    if (!selectedDriver) {
+-      alert('Please select a driver to assign.');
+-      return;
+-    }
+-    try {
+-      await assign.mutateAsync({ id: deliveryId, data: { driverId: selectedDriver } });
+-      await handleRefresh();
+-    } catch (error) {
+-      alert(error instanceof Error ? error.message : 'This delivery could not be updated.');
+-    }
+-  };
+-
+   const handleStatusUpdate = async (deliveryId: string, currentStatus: string) => {
+     const selectedStatus = status[deliveryId] || currentStatus;
+     if (!selectedStatus || selectedStatus === currentStatus) return;
+@@ -127,7 +97,6 @@ export function AdminDeliveries() {
+     { value: 'draft', label: 'Draft' },
+     { value: 'quoted', label: 'Quoted' },
+     { value: 'searching_driver', label: 'Searching Driver' },
+-    { value: 'driver_assigned', label: 'Driver Assigned' },
+     { value: 'driver_en_route_pickup', label: 'En Route to Pickup' },
+     { value: 'driver_arrived_pickup', label: 'Arrived at Pickup' },
+     { value: 'pickup_verified', label: 'Pickup Verified' },
+@@ -151,7 +120,7 @@ export function AdminDeliveries() {
+           <button
+             ref={refreshButtonRef}
+             onClick={handleRefresh}
+-            disabled={isRefreshing || assign.isPending || update.isPending}
++            disabled={isRefreshing || update.isPending}
+             aria-busy={isRefreshing}
+             className="flex items-center gap-2 rounded-lg border bg-[hsl(var(--card))] px-4 py-2 text-sm font-semibold hover:bg-[hsl(var(--muted))] disabled:opacity-50"
+           >
+@@ -248,36 +217,6 @@ export function AdminDeliveries() {
+                     </div>
+ 
+                     <div className="flex shrink-0 flex-col gap-3 rounded-xl border bg-[hsl(var(--background))] p-4 lg:w-72">
+-                      <div className="space-y-1.5">
+-                        <label className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Assign Driver</label>
+-                        <div className="flex gap-2">
+-                          <div className="relative flex-1">
+-                            <select
+-                              aria-label={`Assign a driver to ${delivery.orderNumber}`}
+-                              value={driverId[delivery.id] ?? ''}
+-                              onChange={(event) => setDriverId({ ...driverId, [delivery.id]: event.target.value })}
+-                              disabled={isLoadingDrivers || assign.isPending}
+-                              className="w-full appearance-none rounded-lg border bg-[hsl(var(--card))] py-1.5 pl-3 pr-8 text-sm outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] disabled:opacity-50"
+-                            >
+-                              <option value="">Choose driver</option>
+-                              {drivers
+-                                .filter((driver) => driver.availabilityStatus === 'online')
+-                                .map((driver) => (
+-                                  <option key={driver.id} value={driver.id}>{driver.name} (Online)</option>
+-                                ))}
+-                            </select>
+-                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-[hsl(var(--muted-foreground))]" />
+-                          </div>
+-                          <button
+-                            disabled={!driverId[delivery.id] || assign.isPending}
+-                            onClick={() => handleAssign(delivery.id)}
+-                            className="flex items-center justify-center rounded-lg bg-[hsl(var(--primary))] px-3 py-1.5 text-xs font-bold text-[hsl(var(--primary-foreground))] shadow-sm disabled:opacity-50"
+-                          >
+-                            Assign
+-                          </button>
+-                        </div>
+-                      </div>
+-
+                       <div className="space-y-1.5">
+                         <label className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Update Status</label>
+                         <div className="flex gap-2">
+diff --git a/artifacts/anything-anywhere-driver/src/pages/home.tsx b/artifacts/anything-anywhere-driver/src/pages/home.tsx
+index 33fa6bc..c21a5bc 100644
+--- a/artifacts/anything-anywhere-driver/src/pages/home.tsx
++++ b/artifacts/anything-anywhere-driver/src/pages/home.tsx
+@@ -58,6 +58,7 @@ export default function Home() {
+   const [location, setLocation] = useLocation();
+   const queryClient = useQueryClient();
+   const [activeTab, setActiveTab] = useState<'route' | 'offers'>('route');
++  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+ 
+   useEffect(() => {
+     setActiveTab(location === '/orders' || location === '/available-deliveries' ? 'offers' : 'route');
+@@ -234,13 +235,15 @@ export default function Home() {
+ 
+   const toggleAvailability = () => {
+     const newStatus = isOnline ? 'offline' : 'online';
++    setAvailabilityError(null);
+     updateAvailability.mutate({ data: { availabilityStatus: newStatus } }, {
+       onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: getGetDriverProfileQueryKey() });
+         if (newStatus === 'offline') {
+           queryClient.setQueryData(getListDriverOffersQueryKey(), []);
+         }
+-      }
++      },
++      onError: (error) => setAvailabilityError(error instanceof Error ? error.message : 'Could not change availability. Please try again.'),
+     });
+   };
+ 
+@@ -322,6 +325,7 @@ export default function Home() {
+       </div>
+ 
+       <div className="px-4">
++        {availabilityError && <p role="alert" className="mb-6 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{availabilityError}</p>}
+         {isOnline && locationError && (
+           <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+             <div className="flex items-start gap-3">
+@@ -413,6 +417,7 @@ export default function Home() {
+                 </p>
+                 <button
+                   onClick={toggleAvailability}
++                  disabled={updateAvailability.isPending}
+                   className="driver-btn driver-btn-primary"
+                 >
+                   Go Online
+diff --git a/artifacts/api-server/src/routes/deliveries.ts b/artifacts/api-server/src/routes/deliveries.ts
+index 8e1cb9e..f9830b3 100644
+--- a/artifacts/api-server/src/routes/deliveries.ts
++++ b/artifacts/api-server/src/routes/deliveries.ts
+@@ -5,9 +5,6 @@ import {
+   DeclineDriverDeliveryParams,
+   DeclineDriverDeliveryResponse,
+   AcceptDriverDeliveryResponse,
+-  AssignDeliveryDriverBody,
+-  AssignDeliveryDriverParams,
+-  AssignDeliveryDriverResponse,
+   AttachDeliveryPhotoBody,
+   AttachDeliveryPhotoParams,
+   AttachDeliveryPhotoResponse,
+@@ -111,7 +108,6 @@ import {
+ } from "@workspace/db";
+ import { currentAuth, requireAdminRoles, requireRoles, type AuthContext } from "../lib/auth";
+ import {
+-  assignDelivery,
+   acknowledgeDispatchAlert,
+   customerDelivery,
+   customerRecipientVerification,
+@@ -1443,20 +1439,7 @@ router.get("/admin/drivers", requireAdminRoles("admin", "dispatcher"), async (_r
+   res.json(ListApprovedDriversResponse.parse(await listApprovedDrivers()));
+ });
+ router.post("/admin/deliveries/:id/assign", requireAdminRoles("admin", "dispatcher"), async (req, res): Promise<void> => {
+-  const params = AssignDeliveryDriverParams.safeParse(req.params);
+-  const body = AssignDeliveryDriverBody.safeParse(req.body);
+-  if (!params.success || !body.success) { res.status(400).json({ error: "Please provide a valid driver assignment." }); return; }
+-  try {
+-    const assigned = await assignDelivery(params.data.id, body.data.driverId, currentAuth(res).profileId);
+-    if (!assigned) { res.status(404).json({ error: "That delivery was not found." }); return; }
+-    res.json(AssignDeliveryDriverResponse.parse({
+-      id: assigned.publicDeliveryId,
+-      status: assigned.deliveryStatus,
+-      updatedAt: assigned.updatedAt.toISOString(),
+-    }));
+-  } catch (error) {
+-    res.status(error instanceof DeliveryConflictError ? 409 : 400).json({ error: error instanceof Error ? error.message : "Invalid assignment." });
+-  }
++  res.status(403).json({ error: "Driver acceptance is required to assign a delivery." });
+ });
+ router.post("/admin/deliveries/:id/status", requireAdminRoles("admin", "dispatcher"), async (req, res): Promise<void> => {
+   const params = UpdateAdminDeliveryStatusParams.safeParse(req.params);
+@@ -1580,4 +1563,4 @@ router.get("/events", requireRoles("customer", "driver", "admin", "dispatcher",
+   req.on("close", () => { closed = true; clearInterval(heartbeat); clearInterval(recoveryPoll); unsubscribe(); unsubscribeAdmin(); res.end(); });
+ });
+ 
+-export default router;
+\ No newline at end of file
++export default router;
+diff --git a/artifacts/api-server/test/api.integration.test.ts b/artifacts/api-server/test/api.integration.test.ts
+index 3f3892a..7f9963c 100644
+--- a/artifacts/api-server/test/api.integration.test.ts
++++ b/artifacts/api-server/test/api.integration.test.ts
+@@ -1562,7 +1562,7 @@ test("expired current compliance blocks new offers, acceptance, and dispatch ass
+   const dispatch = await request(`/api/admin/deliveries/${offerId}/assign`, {
+     method: "POST", headers: bearer(dispatcher), body: JSON.stringify({ driverId: driverFixture.driverId }),
+   });
+-  assert.equal(dispatch.status, 400);
++  assert.equal(dispatch.status, 403);
+   const [delivery] = await db.select().from(deliveriesTable).where(eq(deliveriesTable.publicDeliveryId, offerId));
+   assert.equal(delivery.driverId, null, "future-work denial must not mutate delivery assignment");
+   assert.equal(delivery.deliveryStatus, "searching_driver");
+@@ -3071,7 +3071,7 @@ test("materializes only one alert per dispatcher when delayed routes are checked
+   assert.equal(notifications.length, 1);
+ });
+ 
+-test("assigns an approved driver and blocks every other driver from the delivery", async () => {
++test("staff cannot assign drivers; only the accepting driver may update a delivery", async () => {
+   await seedCurrentComplianceDocuments(assignedDriverId, unassignedDriverId);
+   await db
+     .update(deliveriesTable)
+@@ -3086,20 +3086,23 @@ test("assigns an approved driver and blocks every other driver from the delivery
+     headers: bearer(dispatcher),
+     body: JSON.stringify({ driverId: unassignedDriverId }),
+   });
+-  assert.equal(unavailableAssignment.status, 400);
+-  assert.match((unavailableAssignment.body as { error: string }).error, /not currently available/i);
++  assert.equal(unavailableAssignment.status, 403);
++  assert.match((unavailableAssignment.body as { error: string }).error, /driver acceptance/i);
+ 
+   const assignResponse = await request(`/api/admin/deliveries/${createdDeliveryId}/assign`, {
+     method: "POST",
+     headers: bearer(dispatcher),
+     body: JSON.stringify({ driverId: assignedDriverId }),
+   });
+-  assert.equal(assignResponse.status, 200, JSON.stringify(assignResponse.body));
+-  assert.equal((assignResponse.body as { status: string }).status, "driver_assigned");
+-  assert.equal(typeof (assignResponse.body as { updatedAt: unknown }).updatedAt, "string");
+-  assert.equal("total" in (assignResponse.body as Record<string, unknown>), false);
+-  assert.equal("recipientPhone" in (assignResponse.body as Record<string, unknown>), false);
+-  assert.equal("driverRating" in (assignResponse.body as Record<string, unknown>), false);
++  assert.equal(assignResponse.status, 403, JSON.stringify(assignResponse.body));
++  const [unassigned] = await db.select({ driverId: deliveriesTable.driverId, deliveryStatus: deliveriesTable.deliveryStatus })
++    .from(deliveriesTable).where(eq(deliveriesTable.publicDeliveryId, createdDeliveryId)).limit(1);
++  assert.equal(unassigned?.driverId, null);
++  assert.equal(unassigned?.deliveryStatus, "searching_driver");
++
++  // Seed the assigned state for the existing driver access and active route coverage below.
++  await db.update(deliveriesTable).set({ driverId: assignedDriverId, deliveryStatus: "driver_assigned" })
++    .where(eq(deliveriesTable.publicDeliveryId, createdDeliveryId));
+ 
+   const otherDriverList = await request("/api/driver/deliveries", {
+     headers: bearer(unassignedDriver),
+-- 
+2.51.1
+
