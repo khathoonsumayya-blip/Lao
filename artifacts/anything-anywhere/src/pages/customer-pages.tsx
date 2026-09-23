@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams, useSearch } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { type AddressSuggestion, type CheckoutDelivery, type SavedAddress, type SavedAddressInput, useAttachDeliveryPhoto, useCreateCustomerAddress, useCreateCustomerSupportTicketConversationReply, useCreateDelivery, useCreateDeliveryPhotoUploadUrl, useCreateDeliveryQuote, useCreateSupportTicket, useDeleteCustomerAddress, useGetDelivery, useGetDeliveryRoute, useGetDeliverySummary, useGetRecipientVerification, useGetStripePaymentConfig, useListCustomerAddresses, useListCustomerSupportTicketConversation, useListCustomerSupportTickets, useListDeliveries, useListDeliveryPhotos, useListNotifications, useUpdateCustomerAddress, getGetDeliveryQueryKey, getGetDeliveryRouteQueryKey, getGetDeliverySummaryQueryKey, getGetRecipientVerificationQueryKey, getGetStripePaymentConfigQueryKey, getListCustomerAddressesQueryKey, getListCustomerSupportTicketConversationQueryKey, getListCustomerSupportTicketsQueryKey, getListDeliveriesQueryKey, getListDeliveryPhotosQueryKey, getListNotificationsQueryKey } from '@workspace/api-client-react';
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, ChevronDown, CircleHelp, Clock3, CreditCard, Headphones, Info, LockKeyhole, MapPin, MessageSquare, Navigation, Package, Phone, Plus, Receipt, Route as RouteIcon, Send, ShieldCheck, Star, Truck, UserRound, WalletCards } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, ChevronDown, CircleHelp, Clock3, CreditCard, Headphones, Info, LockKeyhole, MapPin, MessageSquare, Mic, MicOff, Navigation, Package, Phone, Plus, Receipt, Route as RouteIcon, Send, ShieldCheck, Star, Truck, UserRound, WalletCards } from 'lucide-react';
 import { AppShell, EmptyState, ErrorState, LoadingState, PrimaryButton, SectionHeading } from '@/components/app-shell';
 import { DeliveryMap } from '@/components/delivery-map';
 import { StripePayment } from '@/components/stripe-payment';
 import { apiUrl } from '@/lib/api-url';
 import { customerTimeZoneLabel, formatCustomerPickupSchedule, pickupScheduleTimestamps, pickupWindows } from '@/lib/pickup-schedule';
-import { clearBookingRouteDraft, readBookingRouteDraft, writeBookingRouteDraft } from '@/booking-route-draft';
+import { clearBookingRouteDraft, readBookingRouteDraft, writeBookingRouteDraft, type BookingRouteDraft } from '@/booking-route-draft';
+import { ariDraftQuestions, browserSpeechRecognitionConstructor, parseAriBookingRequest, recognitionErrorMessage, voiceSupportMessage, type AriBookingDraft, type BrowserSpeechRecognition } from '@/lib/ari-voice';
 import { AddressSearchField } from '@/components/address-search-field';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 
@@ -156,15 +157,7 @@ export function BookPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoStatus, setPhotoStatus] = useState('');
   const [form, setForm] = useState<BookingForm>(() => {
-    let draft: {
-      pickupAddress?: string;
-      dropoffAddress?: string;
-      pickupSelection?: LocationSelection | null;
-      dropoffSelection?: LocationSelection | null;
-       priority?: 'asap' | 'scheduled';
-       scheduledPickupDate?: string;
-       scheduledPickupWindow?: string;
-    } = {};
+    let draft: BookingRouteDraft = {};
     try {
       draft = readBookingRouteDraft(sessionStorage);
     } catch { /* The booking form works without a home-screen draft. */ }
@@ -177,21 +170,21 @@ export function BookPage() {
       dropoffLatitude: draft.dropoffSelection?.latitude,
       dropoffLongitude: draft.dropoffSelection?.longitude,
       dropoffDetails: draft.dropoffSelection ?? undefined,
-      category: 'Small parcels',
-      size: 'small',
-      weight: 'under5',
-      care: 'standard',
+      category: draft.category ?? 'Small parcels',
+      size: draft.size ?? 'small',
+      weight: draft.weight ?? 'under5',
+      care: draft.care ?? 'standard',
       priority: draft.priority ?? 'asap',
       scheduledPickupDate: draft.scheduledPickupDate ?? '',
       scheduledPickupWindow: draft.scheduledPickupWindow ?? '',
-      pickupName: '',
-      pickupPhone: '',
+      pickupName: draft.pickupName ?? '',
+      pickupPhone: draft.pickupPhone ?? '',
       pickupRole: 'Sender',
-      pickupInstructions: '',
-      recipientName: '',
-      recipientPhone: '',
+      pickupInstructions: draft.pickupInstructions ?? '',
+      recipientName: draft.recipientName ?? '',
+      recipientPhone: draft.recipientPhone ?? '',
       recipientRole: 'Recipient',
-      deliveryInstructions: '',
+      deliveryInstructions: draft.deliveryInstructions ?? '',
       prohibitedItemsConfirmed: false,
     };
   });
@@ -246,6 +239,16 @@ export function BookPage() {
       priority: form.priority,
       scheduledPickupDate: form.scheduledPickupDate,
       scheduledPickupWindow: form.scheduledPickupWindow,
+      category: form.category,
+      size: form.size,
+      weight: form.weight,
+      care: form.care,
+      pickupName: form.pickupName,
+      pickupPhone: form.pickupPhone,
+      pickupInstructions: form.pickupInstructions,
+      recipientName: form.recipientName,
+      recipientPhone: form.recipientPhone,
+      deliveryInstructions: form.deliveryInstructions,
     });
   }, [
     form.pickupAddress,
@@ -259,6 +262,16 @@ export function BookPage() {
     form.priority,
     form.scheduledPickupDate,
     form.scheduledPickupWindow,
+    form.category,
+    form.size,
+    form.weight,
+    form.care,
+    form.pickupName,
+    form.pickupPhone,
+    form.pickupInstructions,
+    form.recipientName,
+    form.recipientPhone,
+    form.deliveryInstructions,
   ]);
   const setAddress = (kind: 'pickup' | 'dropoff', suggestion: LocationSelection) => setForm((current) => kind === 'pickup'
     ? { ...current, pickupAddress: suggestion.address, pickupLatitude: suggestion.latitude, pickupLongitude: suggestion.longitude, pickupDetails: suggestion }
@@ -579,12 +592,110 @@ export function AriPage() {
   const [, setLocation] = useLocation();
   const [selected, setSelected] = useState<keyof typeof ariQuickReplies | null>(null);
   const [message, setMessage] = useState('');
+  const [voiceDraft, setVoiceDraft] = useState<AriBookingDraft>({});
+  const [transcript, setTranscript] = useState('');
+  const [voiceStatus, setVoiceStatus] = useState('Tap the microphone when you are ready. Your browser will ask for permission then.');
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const reply = selected ? ariQuickReplies[selected] : '';
+  const questions = ariDraftQuestions(voiceDraft);
+  const speechSupported = Boolean(browserSpeechRecognitionConstructor());
+  const inputClass = 'w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 py-3 text-sm font-semibold text-[hsl(var(--primary))] outline-none focus:border-[hsl(var(--accent))]';
+
+  useEffect(() => () => recognitionRef.current?.abort(), []);
+
+  const applyRequest = (request: string) => {
+    const words = request.trim();
+    if (!words) return;
+    setTranscript((current) => current ? `${current}\n${words}` : words);
+    setVoiceDraft((current) => parseAriBookingRequest(words, current));
+    setVoiceStatus('I added what I understood below. Edit anything that is not right and select both verified addresses.');
+    setSelected(null);
+    setMessage('');
+  };
+
   const send = () => {
-    if (message.trim().length > 0) {
-      setSelected(null);
-      setMessage('');
+    applyRequest(message);
+  };
+
+  const startListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setVoiceStatus('Stopping the microphone…');
+      return;
     }
+    const Recognition = browserSpeechRecognitionConstructor();
+    if (!Recognition) {
+      setVoiceStatus(voiceSupportMessage());
+      return;
+    }
+    const recognition = new Recognition();
+    recognitionRef.current = recognition;
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceStatus('Listening… Speak naturally. You can give all the details or answer one question at a time.');
+    };
+    recognition.onresult = (event) => {
+      const words = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? '')
+        .join(' ')
+        .trim();
+      if (words) applyRequest(words);
+      else setVoiceStatus('I did not hear any words. Try again or type your request.');
+    };
+    recognition.onerror = (event) => {
+      setIsListening(false);
+      setVoiceStatus(recognitionErrorMessage(event.error));
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+    try {
+      recognition.start();
+    } catch {
+      setIsListening(false);
+      setVoiceStatus('The microphone could not start. Close other recording apps, try again, or type your request.');
+    }
+  };
+
+  const updateDraft = <K extends keyof AriBookingDraft>(key: K, value: AriBookingDraft[K]) => {
+    setVoiceDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateAddress = (kind: 'pickup' | 'dropoff', value: string) => {
+    setVoiceDraft((current) => kind === 'pickup'
+      ? { ...current, pickupAddress: value, pickupSelection: null }
+      : { ...current, dropoffAddress: value, dropoffSelection: null });
+  };
+
+  const selectAddress = (kind: 'pickup' | 'dropoff', suggestion: AddressSuggestion) => {
+    const selection = {
+      address: suggestion.address,
+      street: suggestion.street,
+      city: suggestion.city,
+      state: suggestion.state,
+      postalCode: suggestion.postalCode,
+      country: suggestion.country,
+      latitude: suggestion.latitude,
+      longitude: suggestion.longitude,
+    };
+    setVoiceDraft((current) => kind === 'pickup'
+      ? { ...current, pickupAddress: suggestion.address, pickupSelection: selection }
+      : { ...current, dropoffAddress: suggestion.address, dropoffSelection: selection });
+  };
+
+  const reviewBooking = () => {
+    if (questions.length) {
+      setVoiceStatus(questions[0]);
+      return;
+    }
+    writeBookingRouteDraft(sessionStorage, voiceDraft);
+    setLocation('/book');
   };
 
   return (
@@ -606,6 +717,72 @@ export function AriPage() {
                 <Package className="size-8" strokeWidth={1.7} />
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="mt-5 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 shadow-soft sm:p-7" aria-labelledby="ari-voice-heading" data-testid="section-ari-voice-booking">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-[hsl(var(--accent))]">Voice booking</p>
+              <h2 id="ari-voice-heading" className="mt-2 font-display text-2xl font-bold text-[hsl(var(--primary))]">Tell Ari what you need.</h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Speak naturally, one detail at a time or all at once. Nothing is ordered or charged until you review the regular booking and payment steps.</p>
+            </div>
+            <button
+              type="button"
+              onClick={startListening}
+              aria-pressed={isListening}
+              aria-label={isListening ? 'Stop listening' : 'Start voice booking'}
+              className={`flex min-h-14 shrink-0 items-center justify-center gap-3 rounded-full px-5 text-sm font-extrabold transition-all ${isListening ? 'bg-[hsl(var(--destructive))] text-white shadow-lift' : 'bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] hover:-translate-y-0.5'}`}
+              data-testid="button-ari-microphone"
+            >
+              {isListening ? <MicOff className="size-5" /> : <Mic className="size-5" />}
+              {isListening ? 'Stop listening' : 'Speak to Ari'}
+            </button>
+          </div>
+
+          <div className="mt-5 rounded-xl bg-[hsl(var(--secondary))] p-4" role="status" aria-live="polite" data-testid="status-ari-voice">
+            <p className="text-sm font-semibold leading-6 text-[hsl(var(--primary))]">{voiceStatus}</p>
+            {!speechSupported && <p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{voiceSupportMessage()}</p>}
+          </div>
+
+          {transcript && <div className="mt-5">
+            <label htmlFor="ari-transcript" className="mb-2 block text-xs font-bold uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))]">Recognized words</label>
+            <textarea id="ari-transcript" value={transcript} onChange={(event) => setTranscript(event.target.value)} rows={3} className={`${inputClass} resize-y font-normal leading-6`} data-testid="textarea-ari-transcript" />
+            <button type="button" onClick={() => setVoiceDraft((current) => parseAriBookingRequest(transcript, current))} className="mt-2 min-h-10 rounded-full px-3 text-xs font-bold text-[hsl(var(--accent))]" data-testid="button-ari-reparse">Update fields from edited words</button>
+          </div>}
+
+          <div className="mt-6 border-t border-dashed border-[hsl(var(--border))] pt-6">
+            <div className="flex items-start justify-between gap-3">
+              <div><p className="text-xs font-bold uppercase tracking-[.14em] text-[hsl(var(--accent))]">Editable delivery draft</p><h3 className="mt-1 font-display text-xl font-bold text-[hsl(var(--primary))]">Review what Ari heard</h3></div>
+              <span className="rounded-full bg-[hsl(var(--secondary))] px-3 py-1 text-[11px] font-bold text-[hsl(var(--primary))]">Not booked</span>
+            </div>
+
+            <div className="mt-5 grid gap-4">
+              <AddressSearchField label="Pickup address" value={voiceDraft.pickupAddress ?? ''} onChange={(value) => updateAddress('pickup', value)} onSelect={(suggestion) => selectAddress('pickup', suggestion)} placeholder="Speak or enter the pickup address" icon={<MapPin className="size-4" />} testId="input-ari-pickup-address" />
+              {voiceDraft.pickupSelection && <p className="-mt-2 text-xs font-bold text-emerald-700" data-testid="status-ari-pickup-verified">Verified pickup selected</p>}
+              <AddressSearchField label="Delivery address" value={voiceDraft.dropoffAddress ?? ''} onChange={(value) => updateAddress('dropoff', value)} onSelect={(suggestion) => selectAddress('dropoff', suggestion)} placeholder="Speak or enter the delivery address" icon={<RouteIcon className="size-4" />} testId="input-ari-dropoff-address" />
+              {voiceDraft.dropoffSelection && <p className="-mt-2 text-xs font-bold text-emerald-700" data-testid="status-ari-dropoff-verified">Verified delivery selected</p>}
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label><span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">Package type</span><select value={voiceDraft.category ?? ''} onChange={(event) => updateDraft('category', event.target.value)} className={inputClass} data-testid="select-ari-category"><option value="">Choose type</option>{['Documents', 'Food', 'Groceries', 'Medicine', 'Baby items', 'Pet items', 'Gifts', 'Electronics', 'Clothing', 'Small parcels', 'Other'].map((value) => <option key={value}>{value}</option>)}</select></label>
+              <label><span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">Package size</span><select value={voiceDraft.size ?? ''} onChange={(event) => updateDraft('size', event.target.value as AriBookingDraft['size'])} className={inputClass} data-testid="select-ari-size"><option value="">Choose size</option><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
+              <label><span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">Approximate weight</span><select value={voiceDraft.weight ?? ''} onChange={(event) => updateDraft('weight', event.target.value as AriBookingDraft['weight'])} className={inputClass} data-testid="select-ari-weight"><option value="">Choose weight</option><option value="under5">Under 5 lb</option><option value="5to20">5–20 lb</option><option value="20to50">20–50 lb</option></select></label>
+              <label><span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">Handling</span><select value={voiceDraft.care ?? ''} onChange={(event) => updateDraft('care', event.target.value as AriBookingDraft['care'])} className={inputClass} data-testid="select-ari-care"><option value="">Choose handling</option><option value="standard">Standard</option><option value="fragile">Fragile</option><option value="priority">Priority</option><option value="temperature">Temperature sensitive</option></select></label>
+              <label><span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">Pickup timing</span><select value={voiceDraft.priority ?? ''} onChange={(event) => updateDraft('priority', event.target.value as AriBookingDraft['priority'])} className={inputClass} data-testid="select-ari-priority"><option value="">Choose timing</option><option value="asap">As soon as possible</option><option value="scheduled">Scheduled</option></select></label>
+              {voiceDraft.priority === 'scheduled' && <><label><span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">Pickup date</span><input type="date" min={todayLocal()} value={voiceDraft.scheduledPickupDate ?? ''} onChange={(event) => updateDraft('scheduledPickupDate', event.target.value)} className={inputClass} data-testid="input-ari-scheduled-date" /></label><label><span className="mb-2 block text-xs font-bold uppercase tracking-[.1em] text-[hsl(var(--muted-foreground))]">Pickup window</span><select value={voiceDraft.scheduledPickupWindow ?? ''} onChange={(event) => updateDraft('scheduledPickupWindow', event.target.value)} className={inputClass} data-testid="select-ari-scheduled-window"><option value="">Choose window</option>{pickupWindows.map(([start, , label]) => <option key={start} value={start}>{label}</option>)}</select></label></>}
+            </div>
+
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <fieldset className="space-y-3 rounded-xl border border-[hsl(var(--border))] p-4"><legend className="px-1 text-xs font-bold uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))]">Pickup contact</legend><input value={voiceDraft.pickupName ?? ''} onChange={(event) => updateDraft('pickupName', event.target.value)} placeholder="Name" className={inputClass} data-testid="input-ari-pickup-name" /><input type="tel" value={voiceDraft.pickupPhone ?? ''} onChange={(event) => updateDraft('pickupPhone', event.target.value)} placeholder="Phone number" className={inputClass} data-testid="input-ari-pickup-phone" /><textarea value={voiceDraft.pickupInstructions ?? ''} onChange={(event) => updateDraft('pickupInstructions', event.target.value)} placeholder="Pickup instructions (optional)" rows={3} className={`${inputClass} resize-y`} data-testid="textarea-ari-pickup-instructions" /></fieldset>
+              <fieldset className="space-y-3 rounded-xl border border-[hsl(var(--border))] p-4"><legend className="px-1 text-xs font-bold uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))]">Delivery contact</legend><input value={voiceDraft.recipientName ?? ''} onChange={(event) => updateDraft('recipientName', event.target.value)} placeholder="Name" className={inputClass} data-testid="input-ari-recipient-name" /><input type="tel" value={voiceDraft.recipientPhone ?? ''} onChange={(event) => updateDraft('recipientPhone', event.target.value)} placeholder="Phone number" className={inputClass} data-testid="input-ari-recipient-phone" /><textarea value={voiceDraft.deliveryInstructions ?? ''} onChange={(event) => updateDraft('deliveryInstructions', event.target.value)} placeholder="Delivery instructions (optional)" rows={3} className={`${inputClass} resize-y`} data-testid="textarea-ari-delivery-instructions" /></fieldset>
+            </div>
+
+            <div className="mt-6 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--secondary))] p-4" aria-live="polite" data-testid="ari-follow-up">
+              {questions.length ? <><p className="text-sm font-bold text-[hsl(var(--primary))]">Ari still needs:</p><ul className="mt-2 space-y-1 text-sm leading-5 text-[hsl(var(--muted-foreground))]">{questions.map((question) => <li key={question}>• {question}</li>)}</ul></> : <p className="text-sm font-bold text-[hsl(var(--primary))]">Draft complete. Continue to review the route, quote, contacts, safety confirmation, and payment.</p>}
+            </div>
+            <PrimaryButton onClick={reviewBooking} disabled={questions.length > 0} className="mt-5 w-full" data-testid="button-ari-review-booking">Review in booking <ArrowRight className="size-4" /></PrimaryButton>
+            <p className="mt-3 text-center text-xs leading-5 text-[hsl(var(--muted-foreground))]">Voice input only prepares this draft. It cannot create an order, accept the prohibited-items policy, or authorize payment.</p>
           </div>
         </section>
 
@@ -637,8 +814,8 @@ export function AriPage() {
             ))}
           </div>
           <form onSubmit={(event) => { event.preventDefault(); send(); }} className="mt-6 flex gap-2 border-t border-dashed border-[hsl(var(--border))] pt-5">
-            <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Ask a delivery question…" className="min-w-0 flex-1 rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-3 text-sm text-[hsl(var(--primary))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--accent))]" data-testid="input-ari-message" />
-            <button type="submit" disabled={!message.trim()} className="grid size-11 shrink-0 place-items-center rounded-xl bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] transition-transform hover:-translate-y-0.5 disabled:opacity-40" aria-label="Send question to Ari" data-testid="button-ari-send">
+            <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Type booking details instead…" className="min-w-0 flex-1 rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-3 text-sm text-[hsl(var(--primary))] outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--accent))]" data-testid="input-ari-message" />
+            <button type="submit" disabled={!message.trim()} className="grid size-11 shrink-0 place-items-center rounded-xl bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] transition-transform hover:-translate-y-0.5 disabled:opacity-40" aria-label="Add typed booking details" data-testid="button-ari-send">
               <Send className="size-4" />
             </button>
           </form>

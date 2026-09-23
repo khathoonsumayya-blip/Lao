@@ -19,6 +19,16 @@ export type BookingRouteDraft = {
   priority?: 'asap' | 'scheduled';
   scheduledPickupDate?: string;
   scheduledPickupWindow?: string;
+  category?: string;
+  size?: 'small' | 'medium' | 'large';
+  weight?: 'under5' | '5to20' | '20to50';
+  care?: 'standard' | 'fragile' | 'priority' | 'temperature';
+  pickupName?: string;
+  pickupPhone?: string;
+  pickupInstructions?: string;
+  recipientName?: string;
+  recipientPhone?: string;
+  deliveryInstructions?: string;
 };
 
 type BookingDraftStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
