@@ -123,6 +123,7 @@ import {
   listDispatchAlerts,
   listStaffDeliveries,
   persistQuote,
+  quoteFor,
   transitionDelivery,
   type DeliveryStatus,
   validatePickupWindow,
@@ -663,7 +664,14 @@ router.post("/deliveries/route-preview", requireRoles("customer"), async (req, r
     const dropoff = { latitude: coordinates.dropoffLatitude, longitude: coordinates.dropoffLongitude, label: parsed.data.dropoffAddress };
     const route = await providerRoute(pickup, dropoff);
     if (!route?.encodedPolyline) throw new Error("Route provider did not return a usable route.");
-    res.json({ pickup, dropoff, ...route });
+    const [settings] = await db.select().from(paymentFeeSettingsTable).where(eq(paymentFeeSettingsTable.id, "payments")).limit(1);
+    const policy = settings ? {
+      deliveryFeeCents: Number(settings.deliveryFeeCents), customerServiceFeeCents: Number(settings.customerServiceFeeCents),
+      smallOrderThresholdCents: Number(settings.smallOrderThresholdCents), smallOrderFeeCents: Number(settings.smallOrderFeeCents),
+      taxRateBasisPoints: Number(settings.taxRateBasisPoints), updatedAt: settings.updatedAt.toISOString(),
+    } : undefined;
+    const estimatedTotal = quoteFor(parsed.data, policy).total;
+    res.json({ pickup, dropoff, ...route, estimatedTotal });
   } catch (error) {
     const message = error instanceof AddressVerificationError
       ? error.message
