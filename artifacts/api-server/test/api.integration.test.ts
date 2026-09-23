@@ -436,6 +436,19 @@ test("enforces customer mobile-number bounds and permits signup without an addre
   );
 });
 
+test("route preview includes travel time and a starting price for default package settings", async () => {
+  const response = await request("/api/deliveries/route-preview", {
+    method: "POST",
+    headers: bearer(customer),
+    body: JSON.stringify(deliveryBody),
+  });
+  assert.equal(response.status, 200);
+  const preview = response.body as { durationSeconds: number; estimatedTotal: number; encodedPolyline: string };
+  assert.equal(preview.durationSeconds, 360);
+  assert.equal(preview.estimatedTotal, deliveryService.quoteFor(deliveryBody).total);
+  assert.ok(preview.encodedPolyline);
+});
+
 test("returns the quoted scheduled pickup window on checkout, owner list, and detail", async () => {
   const start = new Date(Date.now() + 60 * 60 * 1000).toISOString();
   const end = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
